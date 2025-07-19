@@ -39,7 +39,20 @@
 - **Huawei**: MateBook X Pro, MateBook 13/14 (2018-2022)
 - **Honor**: MagicBook Pro, MagicBook 14/15 (2019-2022)
 - **ASUS**: Select ZenBook models with FPC sensors
-- **Lenovo**: Select IdeaPad/Yoga models with FPC sensors
+
+### Lenovo Laptops
+| Model | Year | Fingerprint ID | Status | Notes |
+|-------|------|----------------|--------|-------|
+| **ThinkBook 13s Gen 2** | 2020-2021 | `10a5:9201` | ✅ Compatible | Intel models |
+| **ThinkBook 14 Gen 2** | 2020-2021 | `10a5:9201` | ✅ Compatible | Intel models |
+| **ThinkBook 15 Gen 2** | 2020-2021 | `10a5:9201` | ✅ Compatible | Intel models |
+| **IdeaPad S540-13** | 2019-2020 | `10a5:9201` | ✅ Confirmed | Works with driver |
+| **Yoga S740-14** | 2019-2020 | `10a5:9201` | ✅ Confirmed | Works with driver |
+| **Yoga Slim 7** | 2020-2021 | `10a5:9201` | ⚠️ Likely | Same hardware |
+| **ThinkPad E14 Gen 2** | 2020-2021 | `06cb:00bd` | ❌ Incompatible | Uses Synaptics sensor |
+| **ThinkPad T14s** | 2020-2021 | `06cb:00bd` | ❌ Incompatible | Uses Synaptics sensor |
+
+**Note**: Most ThinkPad models use Synaptics (`06cb:xxxx`) or Validity (`138a:xxxx`) fingerprint sensors, which are NOT compatible with this driver. Only select ThinkBook and IdeaPad/Yoga models use the FPC sensors.
 
 ## Hardware Identification
 

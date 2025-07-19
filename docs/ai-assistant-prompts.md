@@ -171,6 +171,20 @@ I'll help you troubleshoot issues with your FPC Fingerprint Scanner Driver. Let'
    - GNOME: `sudo apt install gnome-control-center-data`
    - KDE: `sudo apt install plasma-desktop`
 
+### Issue 8: Lenovo-Specific Issues
+
+**Symptoms:** Driver doesn't work on Lenovo ThinkPad models.
+
+**Solutions:**
+1. Check if your model is compatible:
+   - Compatible: ThinkBook 13s/14/15 Gen 2, IdeaPad S540, Yoga S740, Yoga Slim 7
+   - Incompatible: Most ThinkPad models (T/X/P series) use Synaptics or Validity sensors
+2. Verify your device ID: `lsusb | grep -E "(10a5|2717|06cb|138a)"`
+   - `10a5:9201` or `2717:xxxx`: Compatible FPC sensor
+   - `06cb:xxxx`: Synaptics sensor (not compatible)
+   - `138a:xxxx`: Validity sensor (not compatible)
+3. For ThinkPad models, try the libfprint-2-tod1-goodix package instead
+
 Please provide specific error messages or symptoms you're experiencing, and I'll help you troubleshoot further.
 ```
 
@@ -213,7 +227,13 @@ The following laptop models are known to be compatible:
 - Huawei MateBook series
 - Honor MagicBook series
 - Select ASUS ZenBook models
-- Select Lenovo IdeaPad/Yoga models
+- Lenovo models:
+  - ThinkBook 13s/14/15 Gen 2 (Intel models)
+  - IdeaPad S540-13
+  - Yoga S740-14
+  - Yoga Slim 7
+
+**Important Note for Lenovo Users:** Most ThinkPad models use Synaptics (`06cb:xxxx`) or Validity (`138a:xxxx`) fingerprint sensors, which are NOT compatible with this driver. Only select ThinkBook and IdeaPad/Yoga models use the compatible FPC sensors.
 
 ### Step 4: Run Hardware Compatibility Check
 
