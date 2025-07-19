@@ -4,10 +4,10 @@ A production-ready Linux kernel driver for FPC Sensor Controller L:0001 (10a5:92
 
 ## ✨ Features
 
-- **Hardware Support**: Native support for FPC Sensor Controller L:0001 (10a5:9201)
+- **Hardware Support**: Native support for FPC Sensor Controller L:0001 (10a5:9201) and select Xiaomi implementations
 - **Linux Integration**: Seamless integration with libfprint and PAM
 - **Error Recovery**: Automatic failure detection and recovery
-- **Multi-Distro**: Tested on Fedora, Ubuntu, and Arch Linux
+- **Multi-Distro**: Tested on Fedora, Ubuntu, Arch Linux, and more
 - **Power Management**: Optimized for modern laptop power states
 
 ## 🚀 Quick Start
@@ -47,12 +47,15 @@ fprintd-enroll
   - RedmiBook Pro 14/15 (2022)
   - Xiaomi Book Pro 14/16 (2022)
   - Redmi G Pro (2022)
+  - Mi Notebook Air 13.3"
+  - Mi Notebook Air 12.5"
 
 - **Other Brands**:
   - ASUS ZenBook 14X OLED (UX5401)
-  - Lenovo Yoga Slim 7 Pro 14 (2022)
+  - Lenovo ThinkBook 13s/14/15 Gen 2
   - HONOR MagicBook 16 (2022)
   - HUAWEI MateBook 16 (2021)
+  - DELL XPS 13 Plus (2022) - Partial support
 
 For complete list, see [Hardware Compatibility](docs/hardware-compatibility-database.md)
 
@@ -68,10 +71,11 @@ lsusb | grep -i "10a5:9201"
 
 ## 📚 Documentation
 
-- [Installation Guide](docs/installation-guide.md) - Detailed installation instructions
+- [Installation Guide](docs/installation-guide.md) - Step-by-step installation for all major distributions
+- [Quick Start Guide](docs/quick-start-guide.md) - Get up and running quickly
+- [Hardware Compatibility](docs/hardware-compatibility-database.md) - Complete list of supported devices and models
 - [Troubleshooting](docs/FAQ.md) - Common issues and solutions
-- [Hardware Compatibility](docs/hardware-compatibility-database.md) - Complete list of supported devices
-- [Development Guide](docs/development-guide.md) - For contributors
+- [Development Guide](docs/development-guide.md) - For contributors and advanced users
 
 ## 🐛 Reporting Issues
 

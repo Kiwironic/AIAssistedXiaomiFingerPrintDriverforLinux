@@ -1,445 +1,194 @@
-# Xiaomi Fingerprint Scanner Driver - Installation Guide
+# Installation Guide
 
-This comprehensive guide covers installation procedures for all major Linux distributions, including troubleshooting and fallback options.
+This guide provides installation instructions for the FPC Fingerprint Scanner Driver on various Linux distributions.
 
 ## Table of Contents
 
 1. [Prerequisites](#prerequisites)
-2. [Distribution-Specific Instructions](#distribution-specific-instructions)
-3. [Automated Installation](#automated-installation)
+2. [Quick Installation](#quick-installation)
+3. [Distribution-Specific Instructions](#distribution-specific-instructions)
 4. [Manual Installation](#manual-installation)
-5. [Post-Installation Configuration](#post-installation-configuration)
-6. [Troubleshooting](#troubleshooting)
-7. [Fallback Options](#fallback-options)
+5. [Troubleshooting](#troubleshooting)
+6. [Uninstallation](#uninstallation)
 
 ## Prerequisites
 
 ### Hardware Requirements
-- **Xiaomi laptop** with supported fingerprint scanner (see [Hardware Compatibility Database](hardware-compatibility-database.md))
-- **Supported Device IDs**: `2717:0368`, `2717:0369`, `2717:036A`, `2717:036B`, `10a5:9201`
-- **USB 2.0 or higher** port (built-in scanners use internal USB)
-- **Minimum 4GB RAM** (8GB recommended for compilation)
-- **20GB free disk space** (for development headers and build tools)
+- A laptop with a supported fingerprint scanner (see [Hardware Compatibility](hardware-compatibility-database.md))
+- **Supported Device IDs**: `10a5:9201` (FPC L:0001), `2717:0368`, `2717:0369`, `2717:036A`, `2717:036B`
+- **Minimum**: 2GB RAM, 10GB free disk space
+- **Recommended**: 4GB+ RAM, 20GB free disk space
 
 ### Software Requirements
-- **Linux kernel 4.15 or higher** (5.4+ recommended)
-- **GCC compiler** (version 7.0+)
-- **Make build system** (GNU Make 4.0+)
-- **Kernel headers** for your distribution
-- **Git** (for source installation)
-- **Root/sudo access** for installation
-- **Internet connection** for package downloads
+- **Linux kernel**: 5.4 or newer (5.15+ recommended)
+- **GCC**: 9.0 or newer
+- **Make**: 4.0 or newer
+- **Git**: For source installation
+- **libfprint**: 1.90 or newer
+- **Root/sudo access**
 
-### Verified Compatible Systems
-- **Ubuntu**: 20.04 LTS, 22.04 LTS, 24.04 LTS
-- **Linux Mint**: 20.x, 21.x (all editions)
-- **Fedora**: 38, 39, 40 (Workstation/Server)
-- **Debian**: 11 (Bullseye), 12 (Bookworm)
-- **Arch Linux**: Rolling release (current)
-- **openSUSE**: Leap 15.4/15.5, Tumbleweed
-- **RHEL/CentOS**: 8, 9 (and derivatives)
+### Verified Distributions
+- **Ubuntu**: 22.04 LTS, 24.04 LTS
+- **Fedora**: 38, 39, 40
+- **Debian**: 12 (Bookworm)
+- **Arch Linux**: Rolling release
+- **Linux Mint**: 21.x (based on Ubuntu 22.04)
+- **RHEL/CentOS/Rocky/AlmaLinux**: 9.x
 
 ### Hardware Verification
-Before installation, verify your hardware compatibility:
+Before installation, verify your fingerprint scanner:
 ```bash
 # Check your fingerprint scanner device ID
-lsusb | grep -E "(2717|10a5)"
+lsusb | grep -E "(10a5:9201|2717:036[89AB])"
 
-# Expected output examples:
-# Bus 001 Device 003: ID 2717:0368 Xiaomi Inc. Fingerprint Reader
-# Bus 001 Device 003: ID 10a5:9201 FPC Fingerprint Reader
+# For detailed information (requires root):
+sudo lsusb -v -d 10a5:9201 2>/dev/null || sudo lsusb -v -d 2717:0368 2>/dev/null
+
+# Check kernel messages
+dmesg | grep -i -E "(fpc|fingerprint)" | tail -20
+```
+
+## Quick Installation
+
+For most users, the automated installation script is recommended:
+
+```bash
+# Clone the repository
+git clone https://github.com/Kiwironic/AIAssistedXiaomiFingerPrintDriverforLinux.git
+cd AIAssistedXiaomiFingerPrintDriverforLinux
+
+# Run the installation script
+sudo ./scripts/install-driver.sh
+
+# Enroll your fingerprint
+fprintd-enroll
 ```
 
 ## Distribution-Specific Instructions
 
 ### Ubuntu / Debian / Linux Mint
 
-#### Ubuntu 20.04 LTS / 22.04 LTS / 24.04 LTS
+#### Ubuntu 22.04 LTS / 24.04 LTS, Linux Mint 21.x
 ```bash
-# Update package list
-sudo apt update
-
-# Install build dependencies
-sudo apt install -y build-essential linux-headers-$(uname -r) git cmake
-sudo apt install -y libusb-1.0-0-dev libfprint-2-dev fprintd
-sudo apt install -y dkms udev
-
-# Clone repository
-git clone https://github.com/your-repo/xiaomi-fingerprint-driver.git
-cd xiaomi-fingerprint-driver
-
-# Run compatibility check
-sudo bash scripts/hardware-compatibility-check.sh -v
-
-# Install driver
-sudo bash scripts/install-driver.sh --distro ubuntu
-
-# Configure system
-sudo bash scripts/configure-fprintd.sh
-```
-
-#### Debian 11 (Bullseye) / 12 (Bookworm)
-```bash
-# Enable non-free repositories (if needed)
-sudo sed -i 's/main$/main contrib non-free/' /etc/apt/sources.list
-sudo apt update
-
 # Install dependencies
-sudo apt install -y build-essential linux-headers-$(uname -r) git
-sudo apt install -y libusb-1.0-0-dev libfprint-2-dev fprintd-dev
-sudo apt install -y dkms module-assistant
-
-# Prepare kernel module environment
-sudo m-a prepare
-
-# Install driver
-git clone https://github.com/your-repo/xiaomi-fingerprint-driver.git
-cd xiaomi-fingerprint-driver
-sudo bash scripts/install-driver.sh --distro debian
-```
-
-#### Linux Mint 20.x / 21.x
-```bash
-# Same as Ubuntu, but with Mint-specific adjustments
 sudo apt update
 sudo apt install -y build-essential linux-headers-$(uname -r) git
-sudo apt install -y libusb-1.0-0-dev libfprint-2-dev fprintd
+sudo apt install -y libfprint-2-dev fprintd libfprint-2-2
 
-git clone https://github.com/your-repo/xiaomi-fingerprint-driver.git
-cd xiaomi-fingerprint-driver
-sudo bash scripts/install-driver.sh --distro mint
+# Proceed with the quick installation above
 ```
 
-### Red Hat / CentOS / Rocky Linux / AlmaLinux
-
-#### RHEL 8 / CentOS 8 / Rocky Linux 8 / AlmaLinux 8
+#### Debian 12 (Bookworm)
 ```bash
-# Enable EPEL repository
-sudo dnf install -y epel-release
+# Install dependencies
+sudo apt update
+sudo apt install -y build-essential linux-headers-$(uname -r) git
+sudo apt install -y libfprint-2-dev fprintd libfprint-2-2
+```
 
-# Install development tools
-sudo dnf groupinstall -y "Development Tools"
-sudo dnf install -y kernel-devel kernel-headers git cmake
-sudo dnf install -y libusb1-devel libfprint-devel fprintd
+### Fedora / RHEL / CentOS
 
-# Install driver
-git clone https://github.com/your-repo/xiaomi-fingerprint-driver.git
-cd xiaomi-fingerprint-driver
-sudo bash scripts/install-driver.sh --distro rhel8
+#### Fedora 38/39/40
+```bash
+# Install dependencies
+sudo dnf install -y gcc make kernel-devel kernel-headers
+sudo dnf install -y libfprint-devel fprintd-pam fprintd
 ```
 
 #### RHEL 9 / Rocky Linux 9 / AlmaLinux 9
 ```bash
-# Enable CodeReady Builder (CRB) repository
-sudo dnf config-manager --set-enabled crb
+# Enable EPEL and CodeReady Builder
 sudo dnf install -y epel-release
+sudo dnf config-manager --set-enabled crb
 
 # Install dependencies
-sudo dnf groupinstall -y "Development Tools"
-sudo dnf install -y kernel-devel-$(uname -r) git cmake
-sudo dnf install -y libusb1-devel libfprint-devel fprintd
-
-# Install driver
-git clone https://github.com/your-repo/xiaomi-fingerprint-driver.git
-cd xiaomi-fingerprint-driver
-sudo bash scripts/install-driver.sh --distro rhel9
-```
-
-#### CentOS 7 (Legacy Support)
-```bash
-# Install development tools
-sudo yum groupinstall -y "Development Tools"
-sudo yum install -y kernel-devel-$(uname -r) git cmake3
-sudo yum install -y libusb1-devel epel-release
-
-# Install libfprint from EPEL
-sudo yum install -y libfprint-devel fprintd
-
-# Install driver with legacy support
-git clone https://github.com/your-repo/xiaomi-fingerprint-driver.git
-cd xiaomi-fingerprint-driver
-sudo bash scripts/install-driver.sh --distro centos7 --legacy
-```
-
-### Fedora
-
-#### Fedora 38 / 39 / 40
-```bash
-# Install development packages
-sudo dnf groupinstall -y "Development Tools" "C Development Tools and Libraries"
-sudo dnf install -y kernel-devel kernel-headers git cmake
-sudo dnf install -y libusb1-devel libfprint-devel fprintd
-
-# Install driver
-git clone https://github.com/your-repo/xiaomi-fingerprint-driver.git
-cd xiaomi-fingerprint-driver
-sudo bash scripts/install-driver.sh --distro fedora
-```
-
-### openSUSE
-
-#### openSUSE Leap 15.4 / 15.5
-```bash
-# Install development pattern
-sudo zypper install -y -t pattern devel_basis
-sudo zypper install -y kernel-default-devel git cmake
-sudo zypper install -y libusb-1_0-devel libfprint-devel fprintd
-
-# Install driver
-git clone https://github.com/your-repo/xiaomi-fingerprint-driver.git
-cd xiaomi-fingerprint-driver
-sudo bash scripts/install-driver.sh --distro opensuse-leap
-```
-
-#### openSUSE Tumbleweed
-```bash
-# Install development tools
-sudo zypper install -y -t pattern devel_basis
-sudo zypper install -y kernel-default-devel git cmake
-sudo zypper install -y libusb-1_0-devel libfprint-devel fprintd
-
-# Install driver
-git clone https://github.com/your-repo/xiaomi-fingerprint-driver.git
-cd xiaomi-fingerprint-driver
-sudo bash scripts/install-driver.sh --distro opensuse-tumbleweed
+sudo dnf install -y gcc make kernel-devel kernel-headers
+sudo dnf install -y libfprint-devel fprintd-pam fprintd
 ```
 
 ### Arch Linux / Manjaro
 
-#### Arch Linux
 ```bash
-# Update system
-sudo pacman -Syu
-
-# Install base development packages
-sudo pacman -S --needed base-devel linux-headers git cmake
-sudo pacman -S libusb libfprint fprintd
-
-# Install driver
-git clone https://github.com/your-repo/xiaomi-fingerprint-driver.git
-cd xiaomi-fingerprint-driver
-sudo bash scripts/install-driver.sh --distro arch
-```
-
-#### Manjaro
-```bash
-# Update system
-sudo pacman -Syu
-
-# Install development tools
-sudo pacman -S --needed base-devel $(pacman -Qs linux | grep headers | awk '{print $1}' | head -1)
-sudo pacman -S git cmake libusb libfprint fprintd
-
-# Install driver
-git clone https://github.com/your-repo/xiaomi-fingerprint-driver.git
-cd xiaomi-fingerprint-driver
-sudo bash scripts/install-driver.sh --distro manjaro
-```
-
-### Gentoo
-
-#### Gentoo Linux
-```bash
-# Ensure kernel sources are available
-emerge --ask sys-kernel/gentoo-sources
-
 # Install dependencies
-emerge --ask dev-vcs/git dev-util/cmake
-emerge --ask dev-libs/libusb sys-auth/libfprint sys-auth/fprintd
-
-# Install driver
-git clone https://github.com/your-repo/xiaomi-fingerprint-driver.git
-cd xiaomi-fingerprint-driver
-sudo bash scripts/install-driver.sh --distro gentoo
+sudo pacman -S --needed base-devel linux-headers git
+sudo pacman -S --needed libfprint fprintd
 ```
 
-### Alpine Linux
+### openSUSE
 
-#### Alpine Linux 3.17 / 3.18
+#### openSUSE Tumbleweed / Leap 15.5+
 ```bash
-# Install development packages
-sudo apk add build-base linux-headers git cmake
-sudo apk add libusb-dev libfprint-dev fprintd
-
-# Install driver
-git clone https://github.com/your-repo/xiaomi-fingerprint-driver.git
-cd xiaomi-fingerprint-driver
-sudo bash scripts/install-driver.sh --distro alpine
-```
-
-### Void Linux
-
-#### Void Linux
-```bash
-# Install development packages
-sudo xbps-install -S base-devel linux-headers git cmake
-sudo xbps-install -S libusb-devel libfprint-devel fprintd
-
-# Install driver
-git clone https://github.com/your-repo/xiaomi-fingerprint-driver.git
-cd xiaomi-fingerprint-driver
-sudo bash scripts/install-driver.sh --distro void
-```
-
-## Automated Installation
-
-### Universal Installation Script
-
-For most distributions, you can use our universal installation script:
-
-```bash
-# Download and run the universal installer
-curl -fsSL https://raw.githubusercontent.com/your-repo/xiaomi-fingerprint-driver/main/scripts/universal-install.sh | sudo bash
-
-# Or with wget
-wget -qO- https://raw.githubusercontent.com/your-repo/xiaomi-fingerprint-driver/main/scripts/universal-install.sh | sudo bash
-```
-
-### Interactive Installation
-
-For a guided installation experience:
-
-```bash
-git clone https://github.com/your-repo/xiaomi-fingerprint-driver.git
-cd xiaomi-fingerprint-driver
-sudo bash scripts/interactive-install.sh
+# Install dependencies
+sudo zypper install -y -t pattern devel_basis
+sudo zypper install -y kernel-devel libfprint-devel fprintd
 ```
 
 ## Manual Installation
 
-### Step-by-Step Manual Installation
+If the automated script doesn't work, you can install manually:
 
-1. **Download Source Code**
-   ```bash
-   git clone https://github.com/your-repo/xiaomi-fingerprint-driver.git
-   cd xiaomi-fingerprint-driver
-   ```
-
-2. **Check Hardware Compatibility**
-   ```bash
-   sudo bash scripts/hardware-compatibility-check.sh -v
-   ```
-
-3. **Install Dependencies** (distribution-specific, see above)
-
-4. **Compile Driver**
-   ```bash
-   cd src
-   make clean
-   make
-   ```
-
-5. **Install Driver Module**
-   ```bash
-   sudo make install
-   sudo depmod -a
-   ```
-
-6. **Install udev Rules**
-   ```bash
-   sudo cp ../udev/60-fp-xiaomi.rules /etc/udev/rules.d/
-   sudo udevadm control --reload-rules
-   sudo udevadm trigger
-   ```
-
-7. **Load Driver**
-   ```bash
-   sudo modprobe fp_xiaomi_driver
-   ```
-
-8. **Configure libfprint**
-   ```bash
-   sudo bash ../scripts/configure-fprintd.sh
-   ```
-
-## Post-Installation Configuration
-
-### Enable Services
 ```bash
-# Enable and start fprintd service
-sudo systemctl enable fprintd.service
-sudo systemctl start fprintd.service
+# Clone the repository
+git clone https://github.com/Kiwironic/AIAssistedXiaomiFingerPrintDriverforLinux.git
+cd AIAssistedXiaomiFingerPrintDriverforLinux
 
-# Check service status
-sudo systemctl status fprintd.service
-```
+# Build and install
+make
+sudo make install
 
-### Configure PAM (for login authentication)
-```bash
-# Ubuntu/Debian
-sudo pam-auth-update
+# Load the kernel module
+sudo modprobe fpc1020
 
-# RHEL/CentOS/Fedora
-sudo authselect select sssd with-fingerprint
+# Set up udev rules
+sudo cp udev/60-fingerprint-sensor.rules /etc/udev/rules.d/
+sudo udevadm control --reload-rules
+sudo udevadm trigger
 
-# Manual PAM configuration
-echo "auth sufficient pam_fprintd.so" | sudo tee -a /etc/pam.d/common-auth
-```
-
-### Test Installation
-```bash
-# Test driver functionality
-sudo bash scripts/test-driver.sh
-
-# Test fingerprint enrollment
-fprintd-enroll
-
-# Test fingerprint verification
-fprintd-verify
+# Restart fprintd
+sudo systemctl restart fprintd
 ```
 
 ## Troubleshooting
 
-### Common Issues and Solutions
+### Common Issues
 
-#### Issue: Device Not Detected
+#### Driver Not Loading
 ```bash
-# Check USB connection
-lsusb | grep 2717
+# Check if the module is loaded
+lsmod | grep fpc
 
-# Check permissions
-ls -l /dev/bus/usb/*/
+# Check kernel messages
+dmesg | grep -i fpc
 
-# Run diagnostics
-sudo bash scripts/diagnostics.sh hardware
+# Try manually loading the module
+sudo modprobe fpc1020
 ```
 
-#### Issue: Driver Compilation Fails
+#### Fingerprint Not Detected
 ```bash
-# Check kernel headers
-ls /lib/modules/$(uname -r)/build
+# Check USB devices
+lsusb | grep -E "(10a5:9201|2717:036[89AB])"
 
-# Install missing headers (Ubuntu/Debian)
-sudo apt install linux-headers-$(uname -r)
+# Check udev rules
+ls -l /etc/udev/rules.d/*fingerprint*.rules
 
-# Install missing headers (RHEL/CentOS)
-sudo dnf install kernel-devel-$(uname -r)
+# Check fprintd status
+systemctl status fprintd
 ```
 
-#### Issue: Permission Denied
+#### Permission Issues
 ```bash
-# Add user to required groups
-sudo usermod -a -G plugdev,input $USER
+# Add your user to the plugdev group
+sudo usermod -aG plugdev $USER
 
-# Logout and login again
-# Or run: newgrp plugdev
+# Reload udev rules
+sudo udevadm control --reload
+sudo udevadm trigger
 ```
 
-#### Issue: Conflicting Drivers
-```bash
-# Check for conflicts
-lsmod | grep -E "(libfprint|validity|synaptics)"
+### Debugging
 
-# Remove conflicting drivers
-sudo rmmod conflicting_driver_name
-
-# Blacklist conflicting drivers
-echo "blacklist conflicting_driver" | sudo tee -a /etc/modprobe.d/blacklist.conf
-```
-
-### Advanced Troubleshooting
-
-#### Enable Debug Mode
+Enable debug logging:
 ```bash
 # Load driver with debug enabled
 sudo rmmod fp_xiaomi_driver

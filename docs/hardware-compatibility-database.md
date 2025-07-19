@@ -1,36 +1,26 @@
 # Hardware Compatibility Database
 
-## Supported Fingerprint Scanner Hardware
+## Supported Fingerprint Scanners
 
 ### FPC (Fingerprint Cards) Sensors
-
-#### FPC1020 Series
-- **Interface**: USB
-- **Resolution**: 160x160 pixels
-- **Technology**: Capacitive touch
-
-**Device IDs:**
-- `10a5:9201` - FPC Sensor Controller
-- `2717:0368` - Xiaomi implementation
-- `2717:0369` - Xiaomi implementation (variant)
-
-#### FPC1155 Series  
-- **Interface**: USB
-- **Resolution**: 192x192 pixels
-- **Technology**: Capacitive touch
-
-**Device IDs:**
-- `2717:036A` - Xiaomi implementation
-- `2717:036B` - Xiaomi implementation (variant)
 
 #### FPC Sensor Controller L:0001 (10a5:9201)
 - **Manufacturer**: Fingerprint Cards AB (FPC)
 - **Model**: Sensor Controller L:0001
 - **Firmware Version**: 021.26.2.031 (as reported by device)
 - **Interface**: USB 2.0 High Speed (480Mbps)
+- **Resolution**: 192x192 pixels
+- **Technology**: Capacitive touch
 - **Power**: Bus Powered (100mA)
 - **Endpoint**: Bulk IN (0x82), 64-byte packets
 - **Device Class**: Vendor Specific (255/255/255)
+- **Status**: ✅ Fully Supported
+
+#### Legacy FPC Sensors (Limited Support)
+| Series | Device IDs | Resolution | Status | Notes |
+|--------|-----------|------------|--------|-------|
+| FPC1155 | `2717:036A`, `2717:036B` | 192x192 | ⚠️ Partial | Basic functionality only |
+| FPC1020 | `2717:0368`, `2717:0369` | 160x160 | ⚠️ Partial | Limited testing |
 
 ### Device Specifications
 - **USB ID**: 10a5:9201
@@ -42,30 +32,26 @@
 ## Compatible Laptop Models
 
 ### Xiaomi Laptops (Primary Target)
-| Model | Fingerprint ID | Status |
-|-------|----------------|--------|
-| **Mi Notebook Pro 15.6"** | `10a5:9201` | ✅ Confirmed |
-| **Mi Notebook Pro 14"** | `2717:0368` | ✅ Confirmed |
-| **Mi Notebook Air 13.3"** | `10a5:9201` | ✅ Compatible |
-| **Mi Notebook Air 12.5"** | `10a5:9201` | ✅ Compatible |
-| **RedmiBook 13/14/16"** | `2717:0368`, `2717:036A` | ✅ Compatible |
-| **Timi Book Pro 14"** | `10a5:9201` | ✅ Confirmed |
-| **Mi Notebook Pro 14" (2022)** | `10a5:9201` | ✅ Confirmed | FPC L:0001 |
-| **Mi Notebook Pro 15.6" (2021-2022)** | `10a5:9201` | ✅ Confirmed | FPC L:0001 |
-| **RedmiBook Pro 14/15 (2022)** | `10a5:9201` | ✅ Confirmed | FPC L:0001 |
-| **Xiaomi Book Pro 14 (2022)** | `10a5:9201` | ✅ Confirmed | FPC L:0001 |
-| **Xiaomi Book Pro 16 (2022)** | `10a5:9201` | ✅ Confirmed | FPC L:0001 |
-| **Redmi G Pro (2022)** | `10a5:9201` | ✅ Confirmed | FPC L:0001 |
+| Model | Year | Device ID | Status | Notes |
+|-------|------|-----------|--------|-------|
+| **Mi Notebook Pro 15.6"** | 2021-2022 | `10a5:9201` | ✅ Confirmed | FPC L:0001 |
+| **Mi Notebook Pro 14"** | 2021-2022 | `10a5:9201` | ✅ Confirmed | FPC L:0001 |
+| **Xiaomi Book Pro 14/16** | 2022 | `10a5:9201` | ✅ Confirmed | FPC L:0001 |
+| **RedmiBook Pro 14/15** | 2022 | `10a5:9201` | ✅ Confirmed | FPC L:0001 |
+| **Redmi G Pro** | 2022 | `10a5:9201` | ✅ Confirmed | FPC L:0001 |
+| **Mi Notebook Air 13.3"** | 2019-2021 | `10a5:9201` | ✅ Compatible | FPC L:0001 |
+| **Mi Notebook Air 12.5"** | 2019-2021 | `10a5:9201` | ✅ Compatible | FPC L:0001 |
+| **RedmiBook 13/14/16** | 2020-2022 | `2717:0368/036A` | ⚠️ Partial | Legacy FPC |
 
-### Other Compatible Manufacturers
-- **Huawei**: MateBook X Pro, MateBook 13/14 (2018-2022)
-- **Honor**: MagicBook Pro, MagicBook 14/15 (2019-2022)
-- **ASUS**: Select ZenBook models with FPC sensors
-- **ASUS**: ZenBook 14X OLED (UX5401) | `10a5:9201` | ✅ Confirmed | FPC L:0001
-- **Lenovo**: Yoga Slim 7 Pro 14 (2022) | `10a5:9201` | ✅ Confirmed | FPC L:0001
-- **HONOR**: MagicBook 16 (2022) | `10a5:9201` | ✅ Confirmed | FPC L:0001
-- **HUAWEI**: MateBook 16 (2021) | `10a5:9201` | ✅ Confirmed | FPC L:0001
-- **DELL**: XPS 13 Plus (2022) | `10a5:9201` | ⚠️ Partial | Requires firmware update
+### Other Manufacturers
+| Brand | Model | Year | Device ID | Status | Notes |
+|-------|-------|------|-----------|--------|-------|
+| **ASUS** | ZenBook 14X OLED (UX5401) | 2022 | `10a5:9201` | ✅ Confirmed | FPC L:0001 |
+| **Lenovo** | ThinkBook 13s/14/15 Gen 2 | 2020-2021 | `10a5:9201` | ✅ Confirmed | FPC L:0001 |
+| **HONOR** | MagicBook 16 | 2022 | `10a5:9201` | ✅ Confirmed | FPC L:0001 |
+| **HUAWEI** | MateBook 16 | 2021 | `10a5:9201` | ✅ Confirmed | FPC L:0001 |
+| **DELL** | XPS 13 Plus | 2022 | `10a5:9201` | ⚠️ Partial | Firmware update required |
+| **ASUS** | ZenBook 13/14/15 | 2020-2022 | `10a5:9201` | ⚠️ Partial | Some models may vary |
 
 ### Lenovo Laptops
 | Model | Year | Fingerprint ID | Status | Notes |
@@ -107,19 +93,24 @@ lsusb -v -d 10a5:9201  # or your specific device ID
 
 ### Check Your Device
 ```bash
-# Basic device check
-lsusb | grep -i "10a5:9201"
+# Basic device check (run as regular user)
+lsusb | grep -E "(10a5:9201|2717:036[89AB])"
 
-# Detailed device information
-lsusb -v -d 10a5:9201
+# Detailed device information (requires root)
+sudo lsusb -v -d 10a5:9201 2>/dev/null || sudo lsusb -v -d 2717:0368 2>/dev/null
 
 # Check kernel messages
-dmesg | grep -i fpc
+dmesg | grep -i -E "(fpc|fingerprint)" | tail -20
 ```
 
-### Expected Output
+### Expected Output for FPC L:0001
 ```
 Bus 003 Device 003: ID 10a5:9201 FPC FPC Sensor Controller L:0001 FW:021.26.2.031
+```
+
+### Expected Output for Legacy FPC
+```
+Bus 001 Device 004: ID 2717:0368 Xiaomi Inc. Fingerprint Reader
 ```
 
 ## Troubleshooting
