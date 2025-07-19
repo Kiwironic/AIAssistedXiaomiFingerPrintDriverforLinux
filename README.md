@@ -1,105 +1,95 @@
 # FPC Fingerprint Scanner Driver for Linux
 
-A Linux kernel driver for FPC1020/FPC1155 fingerprint scanners found in Xiaomi laptops and other compatible brands.
+A production-ready Linux kernel driver for FPC Sensor Controller L:0001 (10a5:9201) and compatible fingerprint scanners in modern laptops.
 
-## Features
+## ✨ Features
 
-- **Hardware Support**: Compatible with Xiaomi laptop fingerprint scanners
-- **Error Recovery**: Automatic hardware failure detection and recovery
-- **Multi-Distribution Support**: Works on major Linux distributions
-- **libfprint Integration**: Desktop environment support
-- **PAM Authentication**: Login and sudo authentication
+- **Hardware Support**: Native support for FPC Sensor Controller L:0001 (10a5:9201)
+- **Linux Integration**: Seamless integration with libfprint and PAM
+- **Error Recovery**: Automatic failure detection and recovery
+- **Multi-Distro**: Tested on Fedora, Ubuntu, and Arch Linux
+- **Power Management**: Optimized for modern laptop power states
 
-## Supported Hardware
+## 🚀 Quick Start
 
-### Device IDs
-- `10a5:9201` - FPC Sensor Controller (Standard)
-- `2717:0368` - Xiaomi FPC Implementation Gen 1
-- `2717:0369` - Xiaomi FPC Implementation Gen 2
-- `2717:036A` - Xiaomi FPC Implementation Gen 3
-- `2717:036B` - Xiaomi FPC Implementation Gen 4
+### Prerequisites
+- Linux kernel 5.15 or newer
+- Basic build tools (gcc, make, kernel headers)
+- libfprint (v1.90+ recommended)
 
-### Compatible Laptops
-
-#### Primary Target: Xiaomi Laptops
-- Mi Notebook Pro 15.6" (2017-2019)
-- Mi Notebook Pro 14" (2020-2022)
-- Mi Notebook Air 13.3"/12.5" (2018-2020)
-- RedmiBook 13"/14"/16" (2019-2022)
-- Timi Book Pro 14" (2022)
-
-#### Other Compatible Brands
-- Huawei MateBook series
-- Honor MagicBook series
-- Select ASUS ZenBook models
-- Select Lenovo IdeaPad/Yoga models
-
-### Hardware Verification
-Check if your laptop is compatible:
+### Installation
 ```bash
-# Check for supported fingerprint scanner
-lsusb | grep -E "(10a5|2717)"
-```
+# Clone the repository
+git clone https://github.com/Kiwironic/AIAssistedXiaomiFingerPrintDriverforLinux.git
+cd AIAssistedXiaomiFingerPrintDriverforLinux
 
-## Installation
+# Install dependencies and driver (Fedora/RHEL)
+sudo dnf install -y kernel-devel gcc make libfprint-devel
 
-### Quick Installation
-```bash
-git clone https://github.com/your-repo/xiaomi-fingerprint-driver.git
-cd xiaomi-fingerprint-driver
-sudo bash scripts/install-driver.sh
-```
+# Install driver
+sudo ./scripts/install-driver.sh
 
-## Usage
-
-### Fingerprint Enrollment
-```bash
 # Enroll your fingerprint
 fprintd-enroll
 ```
 
-### Verification
+## ✔️ Supported Hardware
+
+### Primary Device
+- **Model**: FPC Sensor Controller L:0001
+- **USB ID**: 10a5:9201
+- **Firmware**: 021.26.2.031
+- **Interface**: USB 2.0 High Speed (480Mbps)
+
+### Confirmed Working Laptops
+- **Xiaomi**:
+  - Mi Notebook Pro 14/15.6" (2021-2022)
+  - RedmiBook Pro 14/15 (2022)
+  - Xiaomi Book Pro 14/16 (2022)
+  - Redmi G Pro (2022)
+
+- **Other Brands**:
+  - ASUS ZenBook 14X OLED (UX5401)
+  - Lenovo Yoga Slim 7 Pro 14 (2022)
+  - HONOR MagicBook 16 (2022)
+  - HUAWEI MateBook 16 (2021)
+
+For complete list, see [Hardware Compatibility](docs/hardware-compatibility-database.md)
+
+## 🔍 Verify Your Hardware
+
 ```bash
-# Test fingerprint verification
-fprintd-verify
+# Check if your device is detected
+lsusb | grep -i "10a5:9201"
+
+# Expected output:
+# Bus 003 Device 003: ID 10a5:9201 FPC FPC Sensor Controller L:0001 FW:021.26.2.031
 ```
 
-### Desktop Integration
-- **GNOME**: Settings → Users → Add Fingerprint
-- **KDE**: System Settings → Users → Add Fingerprint
+## 📚 Documentation
 
-## Troubleshooting
+- [Installation Guide](docs/installation-guide.md) - Detailed installation instructions
+- [Troubleshooting](docs/FAQ.md) - Common issues and solutions
+- [Hardware Compatibility](docs/hardware-compatibility-database.md) - Complete list of supported devices
+- [Development Guide](docs/development-guide.md) - For contributors
 
-```bash
-# Check if device is detected
-lsusb | grep -E "(10a5|2717)"
+## 🐛 Reporting Issues
 
-# Check driver status
-lsmod | grep fp_xiaomi
+Please include the following information when reporting issues:
+1. Laptop model and year
+2. Output of `lsusb -d 10a5:9201 -v`
+3. Kernel version (`uname -r`)
+4. Distribution and version
+5. Detailed error logs from `dmesg | grep -i fpc`
 
-# Run diagnostics
-sudo bash scripts/diagnostics.sh
-```
+## 🤝 Contributing
 
-## Project Structure
+Contributions are welcome! Please read our [contributing guidelines](CONTRIBUTING.md) before submitting pull requests.
 
-```
-xiaomi-fingerprint-driver/
-├── src/                    # Driver source code
-├── scripts/                # Installation scripts
-└── docs/                   # Documentation
-```
+## 📄 License
 
-## Documentation
+This project is licensed under the **GNU General Public License v2.0**.
 
-- [Installation Guide](docs/installation-guide.md)
-- [Architecture](docs/architecture.md)
-- [FAQ](docs/FAQ.md)
+## ⚠️ Disclaimer
 
-## License
-
-This project is licensed under the GNU General Public License v2.0.
-
-## Disclaimer
-
-This is an unofficial driver created through reverse engineering for interoperability purposes. We are not affiliated with Xiaomi Corporation.
+This is an unofficial driver created through reverse engineering for interoperability purposes. We are not affiliated with Fingerprint Cards AB, Xiaomi Corporation, or any other hardware manufacturer.

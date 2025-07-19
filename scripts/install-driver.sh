@@ -363,24 +363,30 @@ check_hardware() {
     
     DEVICE_FOUND=false
     
-    # Check for Xiaomi fingerprint devices (multiple possible IDs)
-    XIAOMI_DEVICES=("2717:0368" "2717:0369" "2717:036a" "2717:036b" "10a5:9201")
+    # Check for FPC Sensor Controller L:0001 (10a5:9201)
+    FPC_DEVICE_ID="10a5:9201"
     
-    for device_id in "${XIAOMI_DEVICES[@]}"; do
-        if lsusb | grep -q "$device_id"; then
-            log_success "Xiaomi Fingerprint Reader ($device_id) detected"
-            DEVICE_FOUND=true
-            break
-        fi
-    done
-    
-    if [[ "$DEVICE_FOUND" == false ]]; then
-        log_warning "No Xiaomi fingerprint devices detected"
-        log_warning "Supported device IDs: ${XIAOMI_DEVICES[*]}"
-        log_warning "Make sure your Xiaomi laptop has the fingerprint scanner enabled in BIOS"
+    if lsusb -d "$FPC_DEVICE_ID" | grep -q "FPC Sensor Controller"; then
+        log_success "FPC Sensor Controller L:0001 ($FPC_DEVICE_ID) detected"
+        DEVICE_FOUND=true
+        
+        # Get detailed device info
+        log_info "Device details:"
+        lsusb -v -d "$FPC_DEVICE_ID" | grep -E '(iProduct|bcdDevice|bNumConfigurations)' | while read -r line; do
+            log_info "   → $line"
+        done
+    else
+        log_warning "FPC Sensor Controller L:0001 ($FPC_DEVICE_ID) not detected"
+        log_warning "Make sure your laptop's fingerprint scanner is enabled in BIOS/UEFI"
         echo
-        log_info "Current USB devices:"
-        lsusb | grep -E "(fingerprint|biometric|2717|10a5)" || log_info "No fingerprint devices found"
+        log_info "Current USB devices (filtered):"
+        lsusb | grep -E "(FPC|fingerprint|biometric|10a5)" || log_info "No matching devices found"
+        
+        # Check if device is present but not accessible
+        if lsusb -d "$FPC_DEVICE_ID" >/dev/null 2>&1; then
+            log_warning "Device found but may not be accessible. Check permissions:"
+            lsusb -v -d "$FPC_DEVICE_ID" 2>&1 | head -5
+        fi
     fi
     
     # Check for existing drivers
@@ -580,109 +586,376 @@ build_driver() {
         log_info "📄 Full installation log saved to: /tmp/install.log"
         exit 1
     fi
-    
-    log_success "🎉 Driver build and installation completed successfully!"
-    echo
-}
 
-# Configure udev rules
-setup_udev_rules() {
-    log_info "Setting up udev rules..."
-    
-    cat << 'EOF' | sudo tee /etc/udev/rules.d/60-fp-xiaomi.rules >/dev/null
-# Xiaomi Fingerprint Scanner udev rules
-# Allow users in plugdev group to access the device
+    # Build and install driver with detailed progress
+    build_driver() {
+        log_info "🔨 Building Xiaomi Fingerprint Driver..."
+        echo "This step compiles the kernel module from source code."
+        echo
+        
+        # Navigate to source directory
+        local src_dir="$(dirname "$0")/../src"
+        if [[ ! -d "$src_dir" ]]; then
+            log_error "❌ Source directory not found: $src_dir"
+            log_info "💡 Make sure you're running this script from the project directory"
+            exit 1
+        fi
+        
+        cd "$src_dir"
+        log_info "   → Working directory: $(pwd)"
+        
+        # Verify source files exist
+        log_info "🔍 Verifying source files..."
+        local required_files=("fp_xiaomi_driver.c" "fp_xiaomi_driver.h" "Makefile")
+        for file in "${required_files[@]}"; do
+            if [[ -f "$file" ]]; then
+                log_success "   ✅ Found: $file"
+            else
+                log_error "   ❌ Missing: $file"
+                exit 1
+            fi
+        done
+        
+        # Check kernel build environment
+        log_info "🔍 Checking kernel build environment..."
+        local kernel_version=$(uname -r)
+        local kernel_build_dir="/lib/modules/$kernel_version/build"
+        
+        if [[ -d "$kernel_build_dir" ]]; then
+            log_success "   ✅ Kernel build directory: $kernel_build_dir"
+        else
+            log_error "   ❌ Kernel build directory not found: $kernel_build_dir"
+            log_info "💡 Install kernel headers for your distribution:"
+            case $DISTRO in
+                ubuntu|debian|linuxmint)
+                    echo "   sudo apt install linux-headers-$(uname -r)"
+                    ;;
+                fedora)
+                    echo "   sudo dnf install kernel-devel kernel-headers"
+                    ;;
+            esac
+            exit 1
+        fi
+        
+        # Clean previous builds
+        log_info "🧹 Cleaning previous builds..."
+        if make clean >/dev/null 2>&1; then
+            log_success "   ✅ Build directory cleaned"
+        else
+            log_info "   → No previous build to clean"
+        fi
+        
+        # Show build configuration
+        log_info "📋 Build configuration:"
+        echo "   → Kernel version: $kernel_version"
+        echo "   → Architecture: $(uname -m)"
+        echo "   → Compiler: $(gcc --version | head -1)"
+        echo "   → Build directory: $kernel_build_dir"
+        echo
+        
+        # Build the driver
+        log_info "🔄 Compiling kernel module..."
+        echo "   → Running: make modules"
+        echo "   → This may take a few minutes..."
+        
+        if make modules 2>&1 | tee /tmp/build.log; then
+            log_success "✅ Driver compiled successfully!"
+            
+            # Verify the module was created
+            if [[ -f "fp_xiaomi_driver.ko" ]]; then
+                local module_size=$(stat -c%s "fp_xiaomi_driver.ko")
+                log_success "   ✅ Module file created: fp_xiaomi_driver.ko (${module_size} bytes)"
+                
+                # Show module information
+                log_info "📋 Module information:"
+                modinfo fp_xiaomi_driver.ko | head -10 | sed 's/^/   → /'
+            else
+                log_error "   ❌ Module file not created despite successful build"
+                exit 1
+            fi
+        else
+            log_error "❌ Driver compilation failed!"
+            echo
+            log_info "🔍 Build error analysis:"
+            
+            # Analyze common build errors
+            if grep -q "No such file or directory" /tmp/build.log; then
+                log_error "   → Missing files or headers detected"
+                log_info "💡 Ensure all dependencies are installed"
+            fi
+            
+            if grep -q "Permission denied" /tmp/build.log; then
+                log_error "   → Permission issues detected"
+                log_info "💡 Check file permissions in source directory"
+            fi
+            
+            if grep -q "kernel.*not found" /tmp/build.log; then
+                log_error "   → Kernel headers not found"
+                log_info "💡 Install kernel development headers"
+            fi
+            
+            echo
+            log_info "📄 Full build log saved to: /tmp/build.log"
+            log_info "💡 Common solutions:"
+            echo "   1. Ensure kernel headers are installed"
+            echo "   2. Check that gcc version is compatible"
+            echo "   3. Verify all dependencies are present"
+            echo "   4. Try: sudo apt update && sudo apt upgrade (Ubuntu/Mint)"
+            echo "   5. Try: sudo dnf update (Fedora)"
+            exit 1
+        fi
+        
+        # Install the driver
+        log_info "📦 Installing driver module..."
+        echo "   → Installing to system module directory"
+        echo "   → Running: sudo make install"
+        
+        if sudo make install 2>&1 | tee /tmp/install.log; then
+            log_success "✅ Driver installed successfully!"
+            
+            # Verify installation
+            local module_path="/lib/modules/$(uname -r)/kernel/drivers/input/misc/fp_xiaomi_driver.ko"
+            if [[ -f "$module_path" ]]; then
+                log_success "   ✅ Module installed at: $module_path"
+            else
+                log_warning "   ⚠️  Module not found at expected location"
+                log_info "   → Searching for installed module..."
+                find /lib/modules/$(uname -r) -name "*fp_xiaomi*" -type f 2>/dev/null | head -5 | sed 's/^/   → /'
+            fi
+            
+            # Update module dependencies
+            log_info "🔄 Updating module dependencies..."
+            sudo depmod -a
+            log_success "   ✅ Module dependencies updated"
+            
+        else
+            log_error "❌ Driver installation failed!"
+            echo
+            log_info "🔍 Installation error analysis:"
+            
+            if grep -q "Permission denied" /tmp/install.log; then
+                log_error "   → Permission issues during installation"
+                log_info "💡 Ensure you have sudo privileges"
+            fi
+            
+            if grep -q "No space left" /tmp/install.log; then
+                log_error "   → Insufficient disk space"
+                log_info "💡 Free up space in /lib/modules/"
+            fi
+            
+            echo
+            log_info "📄 Full installation log saved to: /tmp/install.log"
+            exit 1
+        fi
+        
+        log_success "🎉 Driver build and installation completed successfully!"
+        echo
+    }
 
-# Xiaomi fingerprint devices
-SUBSYSTEM=="usb", ATTRS{idVendor}=="2717", ATTRS{idProduct}=="0368", MODE="0666", GROUP="plugdev", TAG+="uaccess"
-SUBSYSTEM=="usb", ATTRS{idVendor}=="2717", ATTRS{idProduct}=="0369", MODE="0666", GROUP="plugdev", TAG+="uaccess"
-SUBSYSTEM=="usb", ATTRS{idVendor}=="2717", ATTRS{idProduct}=="036a", MODE="0666", GROUP="plugdev", TAG+="uaccess"
-SUBSYSTEM=="usb", ATTRS{idVendor}=="2717", ATTRS{idProduct}=="036b", MODE="0666", GROUP="plugdev", TAG+="uaccess"
+    # Configure udev rules
+    setup_udev_rules() {
+        log_info "Setting up udev rules for FPC Sensor Controller..."
+        
+        cat << 'EOF' | sudo tee /etc/udev/rules.d/60-fpc-fingerprint.rules >/dev/null
+# FPC Sensor Controller L:0001 (10a5:9201) udev rules
+# Provides access to the fingerprint scanner for users in the 'plugdev' group
 
-# Legacy FPC device ID
-SUBSYSTEM=="usb", ATTRS{idVendor}=="10a5", ATTRS{idProduct}=="9201", MODE="0666", GROUP="plugdev", TAG+="uaccess"
+# Main rule for FPC Sensor Controller
+SUBSYSTEM=="usb", ATTRS{idVendor}=="10a5", ATTRS{idProduct}=="9201", \
+  MODE="0666", \
+  GROUP="plugdev", \
+  TAG+="uaccess", \
+  SYMLINK+="fpc/%k"
 
-# Device nodes created by our driver
+# Device node access for the driver
 KERNEL=="fp_xiaomi*", MODE="0666", GROUP="plugdev"
 
 # Auto-load driver when device is connected
-SUBSYSTEM=="usb", ATTRS{idVendor}=="2717", ATTRS{idProduct}=="0368", RUN+="/sbin/modprobe fp_xiaomi_driver"
-SUBSYSTEM=="usb", ATTRS{idVendor}=="2717", ATTRS{idProduct}=="0369", RUN+="/sbin/modprobe fp_xiaomi_driver"
-SUBSYSTEM=="usb", ATTRS{idVendor}=="2717", ATTRS{idProduct}=="036a", RUN+="/sbin/modprobe fp_xiaomi_driver"
-SUBSYSTEM=="usb", ATTRS{idVendor}=="2717", ATTRS{idProduct}=="036b", RUN+="/sbin/modprobe fp_xiaomi_driver"
-SUBSYSTEM=="usb", ATTRS{idVendor}=="10a5", ATTRS{idProduct}=="9201", RUN+="/sbin/modprobe fp_xiaomi_driver"
-EOF
-    
-    # Reload udev rules
-    sudo udevadm control --reload-rules
-    sudo udevadm trigger
-    
-    # Add user to plugdev group if not already a member
-    if ! groups $USER | grep -q plugdev; then
-        log_info "Adding user $USER to plugdev group..."
-        sudo usermod -a -G plugdev $USER
-        log_warning "You need to log out and back in for group changes to take effect"
-    fi
-    
-    log_success "Udev rules configured"
-}
+ACTION=="add", SUBSYSTEM=="usb", \
+  ATTRS{idVendor}=="10a5", ATTRS{idProduct}=="9201", \
+  RUN+="/sbin/modprobe fp_xiaomi_driver"
 
-# Configure module loading
-setup_module_loading() {
-    log_info "Configuring automatic module loading..."
-    
-    # Add module to load at boot
-    echo "fp_xiaomi_driver" | sudo tee /etc/modules-load.d/fp_xiaomi.conf >/dev/null
-    
-    # Create modprobe configuration
-    cat << 'EOF' | sudo tee /etc/modprobe.d/fp_xiaomi.conf >/dev/null
-# Xiaomi Fingerprint Driver configuration
+# Set power management settings to prevent USB autosuspend
+ACTION=="add", SUBSYSTEM=="usb", \
+  ATTRS{idVendor}=="10a5", ATTRS{idProduct}=="9201", \
+  TEST=="power/control", ATTR{power/control}="on"
+
+# Set USB autosuspend delay to 10 seconds (10000ms)
+ACTION=="add", SUBSYSTEM=="usb", \
+  ATTRS{idVendor}=="10a5", ATTRS{idProduct}=="9201", \
+  TEST=="power/autosuspend_delay_ms", ATTR{power/autosuspend_delay_ms}="10000"
+EOF
+
+        # Reload udev rules
+        sudo udevadm control --reload-rules
+        sudo udevadm trigger
+        
+        # Add user to plugdev group if not already a member
+        if ! groups $USER | grep -q plugdev; then
+            log_info "Adding user $USER to plugdev group..."
+            sudo usermod -a -G plugdev $USER
+            log_warning "You need to log out and back in for group changes to take effect"
+        fi
+        
+        log_success "Udev rules configured"
+    }
+
+    # Configure module loading
+    setup_module_loading() {
+        log_info "Configuring automatic module loading for FPC Sensor Controller..."
+        
+        # Create modules-load.d configuration
+        echo "# Load FPC Sensor Controller driver at boot" | sudo tee /etc/modules-load.d/fpc-sensor.conf >/dev/null
+        echo "fp_xiaomi_driver" | sudo tee -a /etc/modules-load.d/fpc-sensor.conf >/dev/null
+        
+        # Create modprobe configuration
+        cat << 'EOF' | sudo tee /etc/modprobe.d/fpc-sensor.conf >/dev/null
+# FPC Sensor Controller Driver Configuration
+# This file is automatically generated - do not edit manually
 
 # Prevent conflicting drivers from loading
 blacklist fpc1020
 blacklist fpc1155
 blacklist validity
 blacklist synaptics_usb
+blacklist goodix
 
 # Driver options (uncomment and modify as needed)
-# options fp_xiaomi_driver debug=1
-# options fp_xiaomi_driver compatibility_mode=1
+# options fp_xiaomi_driver debug=1       # Enable debug output (0-3, where 3 is most verbose)
+# options fp_xiaomi_driver reset_delay=5  # Reset delay in milliseconds (default: 5)
+# options fp_xiaomi_driver timeout=10000  # Command timeout in milliseconds (default: 10000)
 
 # Alias for legacy compatibility
 alias fp_xiaomi fp_xiaomi_driver
+
+# Disable power management for the module
+options fp_xiaomi_driver power_save=0
+
+# Set device-specific parameters
+options fp_xiaomi_driver vid=0x10a5 pid=0x9201
+
+# Enable/disable specific features
+options fp_xiaomi_driver enable_irq=1
+options fp_xiaomi_driver enable_pm=1
+
+# Set debug log level (0=none, 1=errors, 2=warnings, 3=info, 4=debug)
+# options fp_xiaomi_driver log_level=2
+
+# Force device detection (0=auto, 1=force)
+# options fp_xiaomi_driver force_detect=0
+
+# Set interrupt handling mode (0=polling, 1=interrupt)
+# options fp_xiaomi_driver irq_mode=1
+
+# Set power management parameters
+options fp_xiaomi_driver autosuspend_delay=2000  # Autosuspend delay in ms
+options fp_xiaomi_driver keep_awake=1           # Keep device awake during operation
+
+# Performance tuning
+options fp_xiaomi_driver max_transfer=16384     # Maximum USB transfer size
+options fp_xiaomi_driver urb_timeout=5000       # USB request timeout in ms
+
+# Security settings
+options fp_xiaomi_driver secure_mode=1          # Enable secure communication
+options fp_xiaomi_driver validate_fw=1          # Validate firmware signature
+
+# Debugging options
+# options fp_xiaomi_driver simulate=0           # Simulate hardware (for testing)
+# options fp_xiaomi_driver fake_interrupt=0     # Generate fake interrupts (for testing)
+
+# Note: After changing these options, you may need to:
+# 1. Remove the module: sudo modprobe -r fp_xiaomi_driver
+# 2. Reload the module: sudo modprobe fp_xiaomi_driver
 EOF
-    
-    # Update module dependencies
-    sudo depmod -a
-    
-    log_success "Module loading configured"
-}
+        
+        # Update module dependencies
+        log_info "Updating module dependencies..."
+        if sudo depmod -a; then
+            log_success "Module dependencies updated"
+            
+            # Create a configuration file for runtime settings
+            cat << 'EOF' | sudo tee /etc/fp-xiaomi.conf >/dev/null
+# FPC Sensor Controller Runtime Configuration
+# This file is read by the driver at module load time
+
+# Enable debug mode (0=disabled, 1=enabled)
+DEBUG=0
+
+# Log level (0=error, 1=warning, 2=info, 3=debug)
+LOG_LEVEL=1
+
+# USB power management (0=disabled, 1=enabled)
+USB_POWER_MANAGEMENT=1
+
+# Auto-suspend timeout in milliseconds (0=disabled)
+AUTO_SUSPEND_TIMEOUT=2000
+
+# Maximum number of retries for failed operations
+MAX_RETRIES=3
+
+# Timeout for operations in milliseconds
+OPERATION_TIMEOUT=10000
+
+# Security settings
+ENABLE_SECURE_MODE=1
+VALIDATE_FIRMWARE=1
+
+# Performance settings
+MAX_TRANSFER_SIZE=16384
+URB_TIMEOUT=5000
+
+# Note: Changes to this file require reloading the driver
+# sudo modprobe -r fp_xiaomi_driver && sudo modprobe fp_xiaomi_driver
+EOF
+            
+            log_success "Runtime configuration created at /etc/fp-xiaomi.conf"
+        else
+            log_warning "Failed to update module dependencies"
+        fi
+        
+        log_success "Module loading configuration completed"
+    }
 
 # Load and test driver with comprehensive diagnostics
 test_driver() {
-    log_info "🧪 Loading and testing fingerprint driver..."
-    echo "This step loads the driver into the kernel and verifies it works correctly."
-    echo
+    log_info "🧪 Testing FPC Sensor Controller driver..."
+    echo "This step verifies the driver and hardware functionality."
+    echo "====================================================="
+    
+    # Check if running as root
+    check_root
     
     # Unload any existing driver first
     log_info "🔄 Preparing driver environment..."
     echo "   → Unloading any existing fingerprint drivers..."
     
-    local drivers_to_unload=("fp_xiaomi_driver" "fp_xiaomi" "fpc1020" "validity")
+    local drivers_to_unload=(
+        "fp_xiaomi_driver" "fp_xiaomi" 
+        "fpc1020" "fpc1155" "fpc_fingerprint" 
+        "validity" "vfs" "synaptics_usb" "goodix"
+    )
+    
     for driver in "${drivers_to_unload[@]}"; do
         if lsmod | grep -q "^$driver"; then
             log_info "   → Unloading existing driver: $driver"
-            sudo modprobe -r "$driver" 2>/dev/null || true
+            sudo modprobe -r "$driver" 2>/dev/null || {
+                log_warning "   → Failed to unload $driver (might be in use)"
+                sudo rmmod "$driver" 2>/dev/null || true
+            }
         fi
     done
     
-    log_success "   ✅ Driver environment prepared"
+    # Wait for any pending operations to complete
+    sleep 1
+    
+    log_success "✅ Driver environment prepared"
     
     # Verify module file exists
     log_info "🔍 Verifying driver module..."
     local module_paths=(
         "/lib/modules/$(uname -r)/kernel/drivers/input/misc/fp_xiaomi_driver.ko"
         "/lib/modules/$(uname -r)/extra/fp_xiaomi_driver.ko"
+        "/lib/modules/$(uname -r)/updates/dkms/fp_xiaomi_driver.ko"
         "$(dirname "$0")/../src/fp_xiaomi_driver.ko"
     )
     
@@ -694,15 +967,36 @@ test_driver() {
             module_found=true
             module_path="$path"
             log_success "   ✅ Driver module found: $path"
+            
+            # Verify module dependencies
+            log_info "   → Checking module dependencies..."
+            local deps=$(modinfo -F depends "$path" 2>/dev/null || true)
+            if [[ -n "$deps" ]]; then
+                log_info "   → Dependencies: $deps"
+                
+                # Check if dependencies are loaded
+                for dep in $(echo "$deps" | tr ',' ' '); do
+                    if ! lsmod | grep -q "^$dep"; then
+                        log_warning "   → Dependency not loaded: $dep"
+                        log_info "   → Attempting to load dependency..."
+                        if ! sudo modprobe "$dep" 2>/dev/null; then
+                            log_error "   → Failed to load dependency: $dep"
+                        fi
+                    fi
+                done
+            fi
+            
             break
         fi
     done
     
     if [[ "$module_found" == false ]]; then
-        log_error "   ❌ Driver module not found in any expected location"
+        log_error "❌ Driver module not found in any expected location"
         log_info "💡 Expected locations:"
         for path in "${module_paths[@]}"; do
-            echo "   • $path"
+            if [[ -d "$(dirname "$path")" ]]; then
+                echo "   • $path"
+            fi
         done
         log_info "💡 Try rebuilding the driver: make clean && make"
         exit 1
@@ -711,7 +1005,27 @@ test_driver() {
     # Show module information
     log_info "📋 Module information:"
     if command -v modinfo >/dev/null 2>&1; then
-        modinfo "$module_path" 2>/dev/null | head -8 | sed 's/^/   → /' || log_info "   → Module info not available"
+        modinfo "$module_path" 2>/dev/null | grep -E '^(filename|version|description|author|firmware|depends|parm):' | 
+            sed 's/^/   → /' || log_info "   → Module info not available"
+    fi
+    
+    # Check for FPC Sensor Controller hardware
+    log_info "🔍 Checking for FPC Sensor Controller hardware..."
+    local device_found=false
+    
+    # Check USB devices
+    if lsusb -d 10a5:9201 -v 2>/dev/null | grep -q "FPC Sensor"; then
+        device_found=true
+        log_success "✅ FPC Sensor Controller (10a5:9201) found"
+        
+        # Show detailed USB information
+        log_info "   → USB device details:"
+        lsusb -d 10a5:9201 -v 2>&1 | grep -E '(iProduct|bcdDevice|bNumConfigurations|bMaxPower)' | 
+            sed 's/^/      /' || true
+    else
+        log_warning "⚠️  FPC Sensor Controller not found via USB"
+        log_info "   → Check if the device is properly connected and powered"
+        log_info "   → Try: lsusb | grep -i 'FPC\|10a5'"
     fi
     
     # Load the driver
@@ -721,8 +1035,25 @@ test_driver() {
     # Clear dmesg buffer to see fresh messages
     sudo dmesg -C 2>/dev/null || true
     
+    # Load the module
+    local load_success=false
     if sudo modprobe fp_xiaomi_driver 2>&1 | tee /tmp/modprobe.log; then
+        load_success=true
         log_success "✅ Driver loaded successfully!"
+        
+        # Check if module is loaded
+        if lsmod | grep -q "^fp_xiaomi"; then
+            log_success "   → Module is active in kernel"
+            
+            # Show module parameters
+            if [[ -d "/sys/module/fp_xiaomi_driver/parameters" ]]; then
+                log_info "   → Current module parameters:"
+                grep -r '' /sys/module/fp_xiaomi_driver/parameters/ 2>/dev/null | 
+                    sed 's|/sys/module/fp_xiaomi_driver/parameters/|      |; s/:/ = /' || true
+            fi
+        else
+            log_warning "⚠️  Module not found in kernel after loading"
+        fi
     else
         log_error "❌ Failed to load driver via modprobe"
         
@@ -731,13 +1062,20 @@ test_driver() {
         if grep -q "Invalid module format" /tmp/modprobe.log; then
             log_error "   → Module format is invalid (kernel version mismatch)"
             log_info "💡 Rebuild driver for current kernel: $(uname -r)"
+            log_info "   → Installed kernel headers: $(ls -d /usr/src/linux-headers-* 2>/dev/null | xargs -n1 basename 2>/dev/null || echo 'None')"
         elif grep -q "Operation not permitted" /tmp/modprobe.log; then
             log_error "   → Permission denied (possibly Secure Boot)"
             log_info "💡 Check if Secure Boot is enabled and sign the module"
+            log_info "   → Command: mokutil --sb-state"
         elif grep -q "No such device" /tmp/modprobe.log; then
-            log_error "   → Hardware not detected"
-            log_info "💡 Ensure fingerprint scanner is enabled in BIOS"
+            log_error "   → Hardware not detected or not supported"
+            log_info "💡 Ensure fingerprint scanner is enabled in BIOS/UEFI"
+            log_info "💡 Check dmesg for hardware detection issues"
         fi
+        
+        # Show last kernel messages
+        log_info "📄 Last kernel messages:"
+        dmesg | tail -n 20 | sed 's/^/   → /'
         
         # Try fallback loading with insmod
         log_info "🔄 Attempting fallback loading with insmod..."
@@ -848,18 +1186,144 @@ test_driver() {
     fi
     
     # Test hardware communication if device is present
-    if [[ "$DEVICE_FOUND" == true ]]; then
-        log_info "🔗 Testing hardware communication..."
+    if [[ "$device_found" == true ]]; then
+        log_info "🔗 Testing FPC Sensor Controller hardware communication..."
         
         # Check if device is still visible via USB
         local device_still_present=false
-        for device_id in "${XIAOMI_DEVICES[@]}"; do
-            if lsusb | grep -q "$device_id"; then
-                log_success "   ✅ Hardware still detected: $device_id"
-                device_still_present=true
-                break
+        if lsusb -d 10a5:9201 -v 2>/dev/null | grep -q "FPC Sensor"; then
+            log_success "   ✅ Hardware still detected: FPC Sensor Controller (10a5:9201)"
+            device_still_present=true
+            
+            # Check USB device status
+            log_info "   → USB device status:"
+            local usb_path="/sys/bus/usb/devices/$(lsusb -d 10a5:9201 | awk '{print $2":"$4}' | sed 's/://' | tr '[:upper:]' '[:lower:]')/"
+            
+            if [[ -d "$usb_path" ]]; then
+                # Show power management status
+                if [[ -f "${usb_path}power/control" ]]; then
+                    local power_control=$(cat "${usb_path}power/control" 2>/dev/null || echo "unknown")
+                    log_info "      Power control: $power_control"
+                    
+                    if [[ "$power_control" != "on" ]]; then
+                        log_warning "      ⚠️  Power management might interfere with device operation"
+                        log_info "      Try: echo 'on' | sudo tee '${usb_path}power/control'"
+                    fi
+                fi
+                
+                # Show autosuspend delay
+                if [[ -f "${usb_path}power/autosuspend_delay_ms" ]]; then
+                    local autosuspend_delay=$(cat "${usb_path}power/autosuspend_delay_ms" 2>/dev/null || echo "unknown")
+                    log_info "      Autosuspend delay: $autosuspend_delay ms"
+                fi
+                
+                # Show driver binding
+                local driver_link="${usb_path}driver"
+                if [[ -L "$driver_link" ]]; then
+                    local driver_name=$(basename "$(readlink -f "$driver_link")" 2>/dev/null || echo "none")
+                    log_info "      Driver: $driver_name"
+                    
+                    if [[ "$driver_name" != "fp_xiaomi_driver" ]]; then
+                        log_warning "      ⚠️  Device not bound to fp_xiaomi_driver"
+                        log_info "      Try: echo '10a5 9201' | sudo tee /sys/bus/usb/drivers/usb/unbind 2>/dev/null || true"
+                        log_info "           echo '10a5 9201' | sudo tee /sys/bus/usb/drivers/fp_xiaomi/bind 2>/dev/null || true"
+                    fi
+                fi
             fi
-        done
+            
+            # Test basic IOCTL if device node exists
+            local device_node=""
+            for node in "/dev/fp_xiaomi" "/dev/fpc"; do
+                if [[ -c "$node" ]]; then
+                    device_node="$node"
+                    break
+                fi
+            done
+            
+            if [[ -n "$device_node" ]]; then
+                log_info "   → Testing device node: $device_node"
+                
+                # Create a simple test program
+                local test_prog="/tmp/fp_test_ioctl.c"
+                cat > "$test_prog" << 'EOF'
+#include <stdio.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
+#include <linux/ioctl.h>
+
+// Define IOCTL commands (adjust based on actual driver implementation)
+#define FP_IOCTL_GET_VERSION   _IOR('F', 0x01, unsigned int)
+#define FP_IOCTL_GET_STATUS    _IOR('F', 0x02, unsigned int)
+#define FP_IOCTL_RESET         _IO('F', 0x03)
+
+int main(int argc, char *argv[]) {
+    const char *dev_path = argv[1];
+    printf("Testing device: %s\n", dev_path);
+    
+    int fd = open(dev_path, O_RDWR);
+    if (fd < 0) {
+        perror("Failed to open device");
+        return 1;
+    }
+    
+    printf("Device opened successfully\n");
+    
+    // Test version IOCTL
+    unsigned int version = 0;
+    if (ioctl(fd, FP_IOCTL_GET_VERSION, &version) == 0) {
+        printf("Driver version: 0x%08x\n", version);
+    } else {
+        perror("Version IOCTL failed");
+    }
+    
+    // Test status IOCTL
+    unsigned int status = 0;
+    if (ioctl(fd, FP_IOCTL_GET_STATUS, &status) == 0) {
+        printf("Device status: 0x%08x\n", status);
+    } else {
+        perror("Status IOCTL failed");
+    }
+    
+    // Test reset IOCTL
+    printf("Resetting device...\n");
+    if (ioctl(fd, FP_IOCTL_RESET) == 0) {
+        printf("Device reset successfully\n");
+    } else {
+        perror("Reset IOCTL failed");
+    }
+    
+    close(fd);
+    return 0;
+}
+EOF
+                
+                # Compile and run the test program
+                log_info "   → Compiling test program..."
+                if gcc -o /tmp/fp_test "$test_prog" 2>/tmp/compile_error.log; then
+                    log_success "   ✅ Test program compiled successfully"
+                    
+                    log_info "   → Running device test..."
+                    if sudo /tmp/fp_test "$device_node"; then
+                        log_success "   ✅ Basic device test completed successfully"
+                    else
+                        log_warning "   ⚠️  Device test completed with errors"
+                    fi
+                else
+                    log_warning "   ⚠️  Failed to compile test program"
+                    log_info "   → Compilation errors:"
+                    cat /tmp/compile_error.log | sed 's/^/      /'
+                fi
+                
+                # Clean up
+                rm -f /tmp/fp_test_ioctl.c /tmp/fp_test /tmp/compile_error.log 2>/dev/null || true
+            else
+                log_warning "   ⚠️  No device node found for testing"
+            fi
+        else
+            log_warning "   ⚠️  Hardware no longer detected via USB"
+            log_info "      This might indicate a power management or hardware issue"
+        fi
         
         if [[ "$device_still_present" == false ]]; then
             log_warning "   ⚠️  Hardware no longer detected via USB"

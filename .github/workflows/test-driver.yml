@@ -34,7 +34,7 @@ jobs:
         bash scripts/run-all-tests.sh syntax
         
     - name: Upload syntax test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: syntax-test-results
@@ -57,7 +57,7 @@ jobs:
         bash scripts/test-installation-dry-run.sh
         
     - name: Upload dry run results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: dry-run-test-results
@@ -97,7 +97,7 @@ jobs:
         bash /tmp/simple-docker-test.sh
         
     - name: Upload Docker test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: docker-test-results-${{ matrix.distro }}
@@ -142,7 +142,7 @@ jobs:
         echo "- Test Status: PASS" >> /tmp/multi-distro-results/${{ matrix.distro }}-${{ matrix.version }}.md
         
     - name: Upload test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: multi-distro-${{ matrix.distro }}-${{ matrix.version }}
         path: /tmp/multi-distro-results/
@@ -178,7 +178,7 @@ jobs:
         Write-Host "PowerShell test completed successfully"
         
     - name: Upload PowerShell test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: powershell-test-results
@@ -241,7 +241,7 @@ jobs:
         cp /tmp/fp_xiaomi_test_results/comprehensive_test_report.html ./test-report.html
         
     - name: Upload comprehensive test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: comprehensive-test-results
@@ -275,7 +275,7 @@ jobs:
         echo "ShellCheck completed with no critical issues." >> /tmp/security-scan/report.md
         
     - name: Upload security report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: security-scan-report
         path: /tmp/security-scan/
@@ -308,7 +308,7 @@ jobs:
         echo "All documentation files passed validation." >> docs-report.md
         
     - name: Upload documentation report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: documentation-report
         path: docs-report.md
@@ -337,7 +337,7 @@ jobs:
         echo "Average execution time: 1.2s" >> performance-report.md
         
     - name: Upload performance report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: performance-report
         path: performance-report.md
