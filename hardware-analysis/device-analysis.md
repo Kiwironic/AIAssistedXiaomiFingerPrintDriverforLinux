@@ -1,8 +1,8 @@
-# Hardware Analysis Report
+# Hardware Analysis Report - Xiaomi Laptop Fingerprint Scanner
 
 ## Device Information
 
-### Primary Fingerprint Scanner
+### Primary Fingerprint Scanner (Xiaomi Laptop)
 - **Device Name**: FPC Fingerprint Reader (Disum)
 - **Manufacturer**: Fingerprint Cards AB
 - **Vendor ID**: 10A5 (Fingerprint Cards AB)
@@ -42,7 +42,7 @@
 
 ### Environment
 - **OS**: Microsoft Windows 11 Pro
-- **Computer**: MEGABPRO14
+- **Computer**: MEGABPRO14 (Xiaomi Laptop)
 - **Architecture**: x64
 - **Date Analyzed**: July 19, 2025
 
