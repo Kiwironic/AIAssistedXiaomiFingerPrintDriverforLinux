@@ -412,16 +412,38 @@ main() {
     # Final status
     echo
     echo "========================================"
+    # Configure fprintd integration
+    log_info "Configuring fprintd integration..."
+    if command -v fprintd-list >/dev/null 2>&1; then
+        chmod +x "$(dirname "$0")/configure-fprintd.sh"
+        "$(dirname "$0")/configure-fprintd.sh"
+        log_success "fprintd configuration completed"
+    else
+        log_info "fprintd not found, skipping integration"
+        log_info "Install fprintd for desktop integration:"
+        case $DISTRO in
+            ubuntu|debian)
+                log_info "  sudo apt install fprintd libpam-fprintd"
+                ;;
+            fedora)
+                log_info "  sudo dnf install fprintd fprintd-pam"
+                ;;
+            arch|manjaro)
+                log_info "  sudo pacman -S fprintd"
+                ;;
+        esac
+    fi
+    
     log_success "Installation completed successfully!"
     echo "========================================"
     echo
     log_info "Next steps:"
     echo "1. Reboot your system (recommended)"
-    echo "2. Test the fingerprint scanner with your desktop environment"
-    echo "3. If using libfprint, configure fingerprints with:"
-    echo "   - GNOME: Settings > Users > Add fingerprint"
-    echo "   - KDE: System Settings > Users > Add fingerprint"
-    echo "   - Command line: fprintd-enroll"
+    echo "2. Test the fingerprint scanner:"
+    echo "   - Command line: fprintd-xiaomi-wrapper enroll \$USER"
+    echo "   - GUI: Settings > Users > Add fingerprint"
+    echo "3. If issues occur, run the test script:"
+    echo "   - ./scripts/test-driver.sh"
     echo
     log_info "Troubleshooting:"
     echo "- Check kernel messages: dmesg | grep fp_xiaomi"
