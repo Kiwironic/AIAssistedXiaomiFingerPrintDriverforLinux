@@ -1,4 +1,4 @@
-﻿#!/bin/bash
+#!/bin/bash
 
 # Xiaomi FPC Fingerprint Driver Installation Script
 # Copyright (C) 2025 AI-Assisted Development
@@ -751,6 +751,7 @@ build_driver() {
         log_success "🎉 Driver build and installation completed successfully!"
         echo
     }
+}
 
     # Configure udev rules
     setup_udev_rules() {
