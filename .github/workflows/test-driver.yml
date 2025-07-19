@@ -434,7 +434,7 @@ jobs:
         cp -r test-artifacts/* final-report/ 2>/dev/null || true
         
     - name: Upload final report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: final-test-report
         path: final-report/
