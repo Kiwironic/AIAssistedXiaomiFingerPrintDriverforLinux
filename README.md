@@ -8,21 +8,26 @@ This project aims to create a comprehensive Linux driver for fingerprint scanner
 
 ## Hardware Support
 
-- **Target Hardware**: [To be identified]
-- **Vendor**: [To be determined]
-- **Device ID**: [To be determined]
-- **Interface**: [USB/PCI/etc - To be determined]
+- **Target Hardware**: FPC Fingerprint Reader (Disum)
+- **Vendor**: Fingerprint Cards AB
+- **Device ID**: VID:PID 10A5:9201
+- **Interface**: USB
 
 ## Project Status
 
-🔄 **In Development** - Currently in reverse engineering phase
+🔄 **In Development** - Hardware analysis complete, moving to libfprint research
 
-### Current Phase: Information Gathering
-- [ ] Hardware identification
-- [ ] Windows driver analysis
-- [ ] Protocol reverse engineering
-- [ ] Linux kernel module development
-- [ ] Testing and validation
+### Current Phase: Research and Analysis ✅
+- [x] Hardware identification - **FPC Fingerprint Reader (Disum) VID:PID 10A5:9201**
+- [x] Windows driver analysis - **Complete**
+- [ ] Protocol reverse engineering - **Next Phase**
+- [ ] Linux kernel module development - **Planned**
+- [ ] Testing and validation - **Planned**
+
+### Next Phase: libfprint Integration Research
+- [ ] Check existing libfprint support for this device
+- [ ] Analyze similar FPC implementations
+- [ ] Plan development approach
 
 ## Requirements
 
@@ -55,10 +60,11 @@ sudo pacman -S linux-headers base-devel
 
 ## Documentation
 
+- [Development Plan](docs/development-plan.md) - **Current project roadmap**
+- [Hardware Analysis](hardware-analysis/device-analysis.md) - **Complete device specifications**
 - [Reverse Engineering Process](docs/reverse-engineering.md)
 - [Driver Architecture](docs/architecture.md)
-- [Installation Guide](docs/installation.md)
-- [Troubleshooting](docs/troubleshooting.md)
+- [Information Needed](docs/information-needed.md)
 
 ## Contributing
 
