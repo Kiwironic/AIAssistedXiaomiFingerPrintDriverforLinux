@@ -17,9 +17,18 @@ This project aims to create a comprehensive Linux driver for Xiaomi laptop finge
 - **Device ID**: VID:PID 10A5:9201
 - **Interface**: USB
 
+## 🚀 Major Discovery: Existing Linux Support!
+
+**BREAKTHROUGH**: The [fingerprint-ocv](https://github.com/vrolife/fingerprint-ocv) project targets the **exact same device**:
+- **VID:PID**: 10A5:9201 ✅ **PERFECT MATCH**
+- **Device**: FPC Sensor Controller L:0001 FW:021.26.2.x
+- **Status**: Active Linux driver development
+
+This significantly accelerates our development timeline and provides a proven codebase foundation!
+
 ## Project Status
 
-🔄 **In Development** - Hardware analysis complete, moving to libfprint research
+🔄 **In Development** - Hardware analysis complete, existing Linux driver discovered!
 
 ### Current Phase: Research and Analysis ✅
 - [x] Hardware identification - **FPC Fingerprint Reader (Disum) VID:PID 10A5:9201**
@@ -28,10 +37,10 @@ This project aims to create a comprehensive Linux driver for Xiaomi laptop finge
 - [ ] Linux kernel module development - **Planned**
 - [ ] Testing and validation - **Planned**
 
-### Next Phase: libfprint Integration Research
-- [ ] Check existing libfprint support for this device
-- [ ] Analyze similar FPC implementations
-- [ ] Plan development approach
+### Next Phase: Existing Linux Driver Analysis ⚡
+- [ ] **MAJOR DISCOVERY**: fingerprint-ocv project targets same VID:PID 10A5:9201
+- [ ] Test fingerprint-ocv compatibility with Xiaomi Book Pro 14 2022
+- [ ] Analyze existing implementation and contribute improvements
 
 ## Tested Hardware
 
@@ -76,7 +85,8 @@ sudo pacman -S linux-headers base-devel
 
 ## Documentation
 
-- [Development Plan](docs/development-plan.md) - **Current project roadmap**
+- [Development Plan](docs/development-plan.md) - **Updated project roadmap**
+- [Existing Linux Support](hardware-analysis/existing-linux-support.md) - **🚀 fingerprint-ocv analysis**
 - [Hardware Analysis](hardware-analysis/device-analysis.md) - **Complete device specifications**
 - [Xiaomi Compatibility](hardware-analysis/xiaomi-compatibility.md) - **Supported Xiaomi laptop models**
 - [libfprint Research](hardware-analysis/libfprint-research.md) - **Linux integration research**
