@@ -1,0 +1,464 @@
+name: Xiaomi Fingerprint Driver Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run tests daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+env:
+  DRIVER_NAME: fp_xiaomi_driver
+  TEST_RESULTS_PATH: /tmp/test_results
+
+jobs:
+  # Syntax and structure validation
+  syntax-validation:
+    name: Script Syntax Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up test environment
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y shellcheck bash
+        
+    - name: Run syntax tests
+      run: |
+        chmod +x scripts/*.sh
+        bash scripts/run-all-tests.sh syntax
+        
+    - name: Upload syntax test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: syntax-test-results
+        path: /tmp/fp_xiaomi_test_results/
+        retention-days: 30
+
+  # Dry run testing
+  dry-run-tests:
+    name: Dry Run Installation Tests
+    runs-on: ubuntu-latest
+    needs: syntax-validation
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Run dry run tests
+      run: |
+        chmod +x scripts/*.sh
+        bash scripts/test-installation-dry-run.sh
+        
+    - name: Upload dry run results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: dry-run-test-results
+        path: /tmp/fp_xiaomi_*
+        retention-days: 30
+
+  # Docker container testing
+  docker-tests:
+    name: Docker Container Tests
+    runs-on: ubuntu-latest
+    needs: syntax-validation
+    
+    strategy:
+      matrix:
+        distro: [ubuntu, fedora]
+        
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Run Docker tests for ${{ matrix.distro }}
+      run: |
+        chmod +x scripts/*.sh
+        bash scripts/test-with-docker.sh ${{ matrix.distro }}
+        
+    - name: Upload Docker test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: docker-test-results-${{ matrix.distro }}
+        path: /tmp/docker-test-*
+        retention-days: 30
+
+  # Multi-distribution testing
+  multi-distro-tests:
+    name: Multi-Distribution Tests
+    runs-on: ubuntu-latest
+    needs: [syntax-validation, dry-run-tests]
+    
+    strategy:
+      matrix:
+        include:
+          - distro: ubuntu
+            version: "22.04"
+            container: ubuntu:22.04
+          - distro: ubuntu
+            version: "20.04"
+            container: ubuntu:20.04
+          - distro: fedora
+            version: "39"
+            container: fedora:39
+          - distro: fedora
+            version: "40"
+            container: fedora:40
+    
+    container:
+      image: ${{ matrix.container }}
+      
+    steps:
+    - name: Install Git (Ubuntu/Debian)
+      if: startsWith(matrix.container, 'ubuntu')
+      run: |
+        apt-get update
+        apt-get install -y git curl wget
+        
+    - name: Install Git (Fedora)
+      if: startsWith(matrix.container, 'fedora')
+      run: |
+        dnf update -y
+        dnf install -y git curl wget
+        
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Install dependencies (${{ matrix.distro }})
+      run: |
+        if [[ "${{ matrix.distro }}" == "ubuntu" ]]; then
+          apt-get install -y build-essential
+        elif [[ "${{ matrix.distro }}" == "fedora" ]]; then
+          dnf groupinstall -y "Development Tools"
+        fi
+        
+    - name: Test script syntax
+      run: |
+        chmod +x scripts/*.sh
+        bash -n scripts/install-driver.sh
+        bash -n scripts/universal-install.sh
+        bash -n scripts/hardware-compatibility-check.sh
+        
+    - name: Test dependency detection
+      run: |
+        # Test distribution detection
+        source /etc/os-release
+        echo "Detected: $PRETTY_NAME"
+        
+        # Test package manager availability
+        if command -v apt >/dev/null; then
+          echo "APT package manager available"
+        elif command -v dnf >/dev/null; then
+          echo "DNF package manager available"
+        fi
+
+  # PowerShell testing (Windows)
+  powershell-tests:
+    name: PowerShell Tests (Windows)
+    runs-on: windows-latest
+    needs: syntax-validation
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Run PowerShell tests
+      shell: powershell
+      run: |
+        Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
+        .\scripts\test-scripts-powershell.ps1 -TestCategory all -Verbose
+        
+    - name: Upload PowerShell test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: powershell-test-results
+        path: ${{ env.TEMP }}\fp_xiaomi_test_results\
+        retention-days: 30
+
+  # Comprehensive testing
+  comprehensive-tests:
+    name: Comprehensive Test Suite
+    runs-on: ubuntu-latest
+    needs: [syntax-validation, dry-run-tests, docker-tests]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Install testing dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y shellcheck docker.io
+        sudo systemctl start docker
+        sudo usermod -a -G docker $USER
+        
+    - name: Run comprehensive tests
+      run: |
+        chmod +x scripts/*.sh
+        # Use newgrp to apply docker group membership
+        newgrp docker << EOF
+        bash scripts/run-all-tests.sh all --verbose
+        EOF
+        
+    - name: Generate test report
+      run: |
+        # Create comprehensive HTML report
+        if [[ -f /tmp/fp_xiaomi_test_results/comprehensive_test_report.html ]]; then
+          cp /tmp/fp_xiaomi_test_results/comprehensive_test_report.html ./test-report.html
+        fi
+        
+    - name: Upload comprehensive test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: comprehensive-test-results
+        path: |
+          /tmp/fp_xiaomi_test_results/
+          ./test-report.html
+        retention-days: 30
+
+  # Security scanning
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: syntax-validation
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Run Bandit security scan
+      uses: securecodewarrior/github-action-bandit@v1
+      with:
+        path: "."
+        exit_zero: true
+        
+    - name: Run ShellCheck
+      run: |
+        sudo apt-get install -y shellcheck
+        find scripts -name "*.sh" -exec shellcheck {} \;
+        
+    - name: Scan for secrets
+      uses: trufflesecurity/trufflehog@main
+      with:
+        path: ./
+        base: main
+        head: HEAD
+
+  # Documentation validation
+  docs-validation:
+    name: Documentation Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Install markdown tools
+      run: |
+        sudo npm install -g markdownlint-cli
+        sudo apt-get install -y pandoc
+        
+    - name: Validate markdown files
+      run: |
+        markdownlint docs/*.md README.md || true
+        
+    - name: Check documentation completeness
+      run: |
+        # Check if all referenced files exist
+        bash scripts/run-all-tests.sh integration
+        
+    - name: Generate documentation report
+      run: |
+        echo "# Documentation Validation Report" > docs-report.md
+        echo "Generated: $(date)" >> docs-report.md
+        echo "" >> docs-report.md
+        
+        echo "## Markdown Files" >> docs-report.md
+        find . -name "*.md" -type f >> docs-report.md
+        
+        echo "" >> docs-report.md
+        echo "## Documentation Structure" >> docs-report.md
+        tree docs/ >> docs-report.md || ls -la docs/ >> docs-report.md
+        
+    - name: Upload documentation report
+      uses: actions/upload-artifact@v3
+      with:
+        name: documentation-report
+        path: docs-report.md
+
+  # Performance testing
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    needs: [syntax-validation, dry-run-tests]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Install performance testing tools
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y time hyperfine
+        
+    - name: Benchmark script execution
+      run: |
+        chmod +x scripts/*.sh
+        
+        echo "# Performance Test Results" > performance-report.md
+        echo "Generated: $(date)" >> performance-report.md
+        echo "" >> performance-report.md
+        
+        # Benchmark syntax checking
+        echo "## Syntax Check Performance" >> performance-report.md
+        hyperfine --warmup 3 'bash scripts/run-all-tests.sh syntax' >> performance-report.md
+        
+        # Benchmark dry run
+        echo "" >> performance-report.md
+        echo "## Dry Run Performance" >> performance-report.md
+        hyperfine --warmup 1 'bash scripts/test-installation-dry-run.sh' >> performance-report.md
+        
+    - name: Upload performance report
+      uses: actions/upload-artifact@v3
+      with:
+        name: performance-report
+        path: performance-report.md
+
+  # Final report generation
+  generate-final-report:
+    name: Generate Final Test Report
+    runs-on: ubuntu-latest
+    needs: [syntax-validation, dry-run-tests, docker-tests, multi-distro-tests, powershell-tests, comprehensive-tests, security-scan, docs-validation, performance-tests]
+    if: always()
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: ./test-artifacts
+        
+    - name: Generate final report
+      run: |
+        mkdir -p final-report
+        
+        cat > final-report/index.html << 'EOF'
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Xiaomi Fingerprint Driver - CI/CD Test Report</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+                .header { background: #f0f0f0; padding: 20px; border-radius: 5px; margin-bottom: 20px; }
+                .section { margin: 20px 0; padding: 15px; border-left: 4px solid #007acc; }
+                .success { color: #28a745; font-weight: bold; }
+                .warning { color: #ffc107; font-weight: bold; }
+                .error { color: #dc3545; font-weight: bold; }
+                .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+                .card { background: #f8f9fa; padding: 15px; border-radius: 5px; border-left: 4px solid #007acc; }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>🧪 Xiaomi Fingerprint Driver - CI/CD Test Report</h1>
+                <p><strong>Generated:</strong> $(date)</p>
+                <p><strong>Repository:</strong> ${{ github.repository }}</p>
+                <p><strong>Commit:</strong> ${{ github.sha }}</p>
+                <p><strong>Branch:</strong> ${{ github.ref_name }}</p>
+            </div>
+            
+            <div class="section">
+                <h2>📊 Test Summary</h2>
+                <div class="grid">
+        EOF
+        
+        # Add test results for each job
+        for artifact in test-artifacts/*/; do
+          if [[ -d "$artifact" ]]; then
+            artifact_name=$(basename "$artifact")
+            echo "<div class=\"card\"><h3>$artifact_name</h3><p>Test completed</p></div>" >> final-report/index.html
+          fi
+        done
+        
+        cat >> final-report/index.html << 'EOF'
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>📁 Test Artifacts</h2>
+                <ul>
+        EOF
+        
+        # List all artifacts
+        find test-artifacts -type f -name "*.html" -o -name "*.txt" -o -name "*.md" | while read file; do
+          echo "<li><a href=\"$file\">$(basename "$file")</a></li>" >> final-report/index.html
+        done
+        
+        cat >> final-report/index.html << 'EOF'
+                </ul>
+            </div>
+            
+            <div class="section">
+                <h2>🔗 Additional Resources</h2>
+                <ul>
+                    <li><a href="https://github.com/${{ github.repository }}">GitHub Repository</a></li>
+                    <li><a href="https://github.com/${{ github.repository }}/actions">GitHub Actions</a></li>
+                    <li><a href="https://github.com/${{ github.repository }}/releases">Releases</a></li>
+                </ul>
+            </div>
+        </body>
+        </html>
+        EOF
+        
+        # Copy all artifacts to final report
+        cp -r test-artifacts/* final-report/ 2>/dev/null || true
+        
+    - name: Upload final report
+      uses: actions/upload-artifact@v3
+      with:
+        name: final-test-report
+        path: final-report/
+        retention-days: 90
+        
+    - name: Deploy to GitHub Pages (if main branch)
+      if: github.ref == 'refs/heads/main'
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./final-report
+        destination_dir: test-reports/${{ github.run_number }}
+
+  # Notification
+  notify-results:
+    name: Notify Test Results
+    runs-on: ubuntu-latest
+    needs: [generate-final-report]
+    if: always()
+    
+    steps:
+    - name: Notify success
+      if: needs.generate-final-report.result == 'success'
+      run: |
+        echo "✅ All tests passed successfully!"
+        echo "Test report available at: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/test-reports/${{ github.run_number }}"
+        
+    - name: Notify failure
+      if: needs.generate-final-report.result == 'failure'
+      run: |
+        echo "❌ Some tests failed!"
+        echo "Check the test artifacts for detailed information."

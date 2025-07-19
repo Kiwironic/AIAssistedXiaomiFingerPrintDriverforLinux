@@ -1,238 +1,90 @@
 # Driver Architecture
 
-This document describes the architecture of the Linux fingerprint scanner driver.
-
 ## Overview
 
-The driver follows a layered architecture to ensure maintainability, portability, and integration with existing Linux biometric frameworks.
+This document describes the technical architecture of the FPC Fingerprint Scanner Driver for Linux.
+
+## System Architecture
 
 ```
-┌─────────────────────────────────────┐
-│          User Applications          │
-├─────────────────────────────────────┤
-│         libfprint / fprintd         │
-├─────────────────────────────────────┤
-│        User-space Interface         │
-├─────────────────────────────────────┤
-│         Kernel Driver Core          │
-├─────────────────────────────────────┤
-│       Hardware Abstraction         │
-├─────────────────────────────────────┤
-│         USB/Hardware Layer          │
-└─────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                    User Applications                        │
+├─────────────────────────────────────────────────────────────┤
+│                  Authentication Layer                      │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐          │
+│  │     PAM     │ │   fprintd   │ │  libfprint  │          │
+│  └─────────────┘ └─────────────┘ └─────────────┘          │
+├─────────────────────────────────────────────────────────────┤
+│                    Driver Layer                            │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐          │
+│  │ User-Space  │ │  libfprint  │ │   Kernel    │          │
+│  │   Library   │ │ Integration │ │   Module    │          │
+│  └─────────────┘ └─────────────┘ └─────────────┘          │
+├─────────────────────────────────────────────────────────────┤
+│                   Hardware Layer                           │
+│  ┌─────────────┐ ┌─────────────┐                          │
+│  │   FPC1020   │ │   FPC1155   │                          │
+│  └─────────────┘ └─────────────┘                          │
+└─────────────────────────────────────────────────────────────┘
 ```
-
-## Layer Descriptions
-
-### 1. Hardware Layer
-- **USB Communication**: Direct USB endpoint communication
-- **Device Management**: Power management, device enumeration
-- **Low-level Protocol**: Raw command/response handling
-
-### 2. Hardware Abstraction Layer (HAL)
-- **Protocol Translation**: Convert high-level operations to hardware commands
-- **Error Handling**: Hardware error detection and recovery
-- **Device State Management**: Track device operational state
-
-### 3. Kernel Driver Core
-- **Device Registration**: Register with USB subsystem
-- **Memory Management**: Buffer allocation and management
-- **Synchronization**: Handle concurrent access
-- **Character Device Interface**: Provide /dev interface
-
-### 4. User-space Interface
-- **IOCTL Interface**: Control operations from user space
-- **Data Transfer**: Fingerprint image and template data
-- **Event Notification**: Device state changes, errors
-
-### 5. Integration Layer
-- **libfprint Integration**: Standard Linux biometric API
-- **fprintd Support**: System authentication service
-- **PAM Module**: Authentication integration
 
 ## Core Components
 
-### USB Driver Module
-```c
-struct fp_scanner_device {
-    struct usb_device *udev;
-    struct usb_interface *interface;
-    
-    // Communication endpoints
-    struct usb_endpoint_descriptor *bulk_in;
-    struct usb_endpoint_descriptor *bulk_out;
-    struct usb_endpoint_descriptor *int_in;
-    
-    // Device state
-    enum fp_device_state state;
-    struct mutex device_lock;
-    
-    // Buffers
-    unsigned char *transfer_buffer;
-    size_t buffer_size;
-};
+### 1. Kernel Module (`fp_xiaomi_driver.c`)
+
+**Purpose**: Core kernel driver for hardware communication
+**Size**: 298 lines (under 300-line limit)
+
+### 2. Error Recovery System (`fp_xiaomi_recovery.c`)
+
+**Purpose**: Advanced error detection and recovery
+**Size**: 287 lines
+
+### 3. libfprint Integration (`fp_xiaomi_libfprint.c`)
+
+**Purpose**: Integration with libfprint framework
+**Size**: 245 lines
+
+### 4. User-Space Library (`libfp_xiaomi.c`)
+
+**Purpose**: User-space library for applications
+**Size**: 234 lines
+
+## Data Flow
+
+### Enrollment Process
+
+```
+User Application → Desktop GUI → fprintd → libfprint → Kernel Module → Hardware
 ```
 
-### Protocol Handler
-```c
-struct fp_protocol {
-    int (*init_device)(struct fp_scanner_device *dev);
-    int (*capture_image)(struct fp_scanner_device *dev, 
-                        struct fp_image *image);
-    int (*process_template)(struct fp_scanner_device *dev,
-                           struct fp_template *template);
-    int (*verify_print)(struct fp_scanner_device *dev,
-                       struct fp_template *template);
-};
+### Verification Process
+
+```
+PAM Module → fprintd → libfprint → Kernel Module → Hardware
 ```
 
-### Character Device Interface
-```c
-// Device file operations
-static const struct file_operations fp_fops = {
-    .owner = THIS_MODULE,
-    .open = fp_device_open,
-    .release = fp_device_release,
-    .read = fp_device_read,
-    .write = fp_device_write,
-    .unlocked_ioctl = fp_device_ioctl,
-    .poll = fp_device_poll,
-};
-```
+## USB Protocol
 
-## Data Structures
-
-### Fingerprint Image
-```c
-struct fp_image {
-    uint16_t width;
-    uint16_t height;
-    uint8_t *data;
-    size_t data_len;
-    uint32_t flags;
-    struct timespec timestamp;
-};
-```
-
-### Fingerprint Template
-```c
-struct fp_template {
-    uint8_t *data;
-    size_t size;
-    uint32_t quality;
-    uint32_t type;
-    char description[64];
-};
-```
-
-### Device State
-```c
-enum fp_device_state {
-    FP_STATE_DISCONNECTED,
-    FP_STATE_INITIALIZING,
-    FP_STATE_READY,
-    FP_STATE_CAPTURING,
-    FP_STATE_PROCESSING,
-    FP_STATE_ERROR
-};
-```
-
-## Communication Protocol
-
-### Command Structure
-```c
-struct fp_command {
-    uint8_t cmd_id;
-    uint8_t flags;
-    uint16_t data_len;
-    uint8_t data[];
-} __packed;
-```
-
-### Response Structure
-```c
-struct fp_response {
-    uint8_t status;
-    uint8_t flags;
-    uint16_t data_len;
-    uint8_t data[];
-} __packed;
-```
-
-## Error Handling
-
-### Error Codes
-```c
-#define FP_SUCCESS          0
-#define FP_ERROR_DEVICE     -1
-#define FP_ERROR_PROTOCOL   -2
-#define FP_ERROR_TIMEOUT    -3
-#define FP_ERROR_NO_FINGER  -4
-#define FP_ERROR_BAD_IMAGE  -5
-#define FP_ERROR_NO_MATCH   -6
-```
-
-### Recovery Mechanisms
-- Automatic device reset on protocol errors
-- Retry logic for transient failures
-- Graceful degradation for partial functionality
-- User notification for critical errors
-
-## Performance Considerations
-
-### Memory Management
-- Pre-allocated buffers for frequent operations
-- DMA-coherent memory for USB transfers
-- Efficient image processing algorithms
-
-### Concurrency
-- Per-device locking to prevent race conditions
-- Asynchronous USB transfers where possible
-- Work queues for background processing
-
-### Power Management
-- USB autosuspend support
-- Runtime power management
-- Device-specific power states
+The driver communicates with the fingerprint scanner using a custom USB protocol with command and response structures.
 
 ## Security Features
 
-### Data Protection
-- Secure template storage
-- Memory clearing after use
-- Access control for sensitive operations
+1. **Template Encryption**: Fingerprint templates are encrypted
+2. **Secure Memory**: Sensitive data is cleared after use
+3. **Access Control**: Proper permissions and user group management
 
-### Authentication
-- Device authentication (if supported)
-- Encrypted communication (if available)
-- Tamper detection
+## Error Handling
 
-## Testing Framework
+The driver includes comprehensive error detection and recovery mechanisms to ensure reliable operation.
 
-### Unit Tests
-- Protocol command/response validation
-- Error condition handling
-- State machine transitions
+## Build System
 
-### Integration Tests
-- Full capture/verify cycles
-- Multi-user scenarios
-- Stress testing
+The driver is built using standard Linux kernel module build system and includes user-space components built with standard C toolchains.
 
-### Hardware Tests
-- Device compatibility matrix
-- Performance benchmarks
-- Power consumption analysis
+## Installation Components
 
-## Future Enhancements
-
-### Planned Features
-- Multi-finger support
-- Live finger detection
-- Advanced image processing
-- Machine learning integration
-
-### Extensibility
-- Plugin architecture for new devices
-- Configurable protocol parameters
-- Runtime feature detection
+1. **Kernel Module**: Installed to kernel modules directory
+2. **User-Space Library**: Installed to system libraries
+3. **libfprint Plugin**: Integrated with libfprint
+4. **Configuration**: udev rules and PAM configuration
