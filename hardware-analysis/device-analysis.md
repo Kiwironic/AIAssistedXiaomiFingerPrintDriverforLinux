@@ -7,7 +7,7 @@
 - **Manufacturer**: Fingerprint Cards AB
 - **Vendor ID**: 10A5 (Fingerprint Cards AB)
 - **Product ID**: 9201
-- **Device ID**: USB\VID_10A5&PID_9201\5&84EB8D&0&5
+- **Device ID**: USB\VID_10A5&PID_9201
 - **Hardware IDs**: 
   - USB\VID_10A5&PID_9201&REV_0231
   - USB\VID_10A5&PID_9201
@@ -16,18 +16,13 @@
 - **Device Class**: Biometric
 - **Service**: WUDFRd (Windows User-Mode Driver Framework)
 
-### Secondary Device (Touchpad Related)
-- **Device Name**: Goodix Firmware Update Device
-- **Manufacturer**: Shenzhen Huiding Technology Co., Ltd
-- **Device ID**: HID\GXTP7936&COL02\5&EBED4B6&0&0001
-- **Interface**: HID (Human Interface Device)
-- **Status**: OK
+
 
 ## Driver Information
 
 ### FPC Driver Package
 - **Driver Package**: fpc_disum_um_usb.inf
-- **Location**: C:\Windows\System32\DriverStore\FileRepository\fpc_disum_um_usb.inf_amd64_63d2db59e49d11920\
+- **Location**: Windows DriverStore
 - **Size**: 7,791 bytes
 - **Date**: March 28, 2022
 - **Type**: User-mode USB driver
@@ -42,11 +37,11 @@
 
 ### Environment
 - **OS**: Microsoft Windows 11 Pro
-- **Computer**: MEGABPRO14 (Xiaomi Laptop)
+- **Laptop Model**: Timi Book Pro 14 2022 / Xiaomi Book Pro 14 2022
+- **Processor**: Intel i5-1240P
 - **System SKU**: TM2117-40430
 - **BIOS Version**: TIMI XMAAD4B0P1717
 - **Architecture**: x64
-- **Date Analyzed**: July 19, 2025
 
 ### Windows Hello Status
 - **Status**: Not configured or unknown
@@ -57,7 +52,7 @@
 ### USB Details
 - **Connection**: USB interface
 - **Revision**: 0231
-- **Bus Location**: 5&84EB8D&0&5
+
 - **Driver Framework**: WUDF (Windows User-Mode Driver Framework)
 
 ### Device Capabilities

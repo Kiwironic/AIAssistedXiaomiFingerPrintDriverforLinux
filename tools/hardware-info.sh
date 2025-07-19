@@ -11,7 +11,7 @@ OUTPUT_DIR="$PROJECT_ROOT/hardware-analysis"
 
 echo "=== Fingerprint Scanner Hardware Detection ==="
 echo "Date: $(date)"
-echo "System: $(uname -a)"
+echo "System: Linux"
 echo
 
 # Create output directory for structured output
@@ -26,7 +26,7 @@ command_exists() {
 echo "=== USB Device Information ==="
 if command -v lsusb &> /dev/null; then
     echo "All USB devices:"
-    lsusb -v 2>/dev/null | grep -A 20 -B 5 -i "fingerprint\|biometric\|validity\|synaptics\|elan\|goodix"
+    lsusb -v 2>/dev/null | grep -A 20 -B 5 -i "fingerprint\|biometric\|fpc"
     
     echo -e "\nUSB devices by class (looking for biometric devices):"
     lsusb | while read line; do
@@ -55,7 +55,7 @@ fi
 
 echo -e "\n=== Kernel Module Information ==="
 echo "Currently loaded modules related to fingerprint/biometric:"
-lsmod | grep -i "fp\|finger\|bio\|validity\|synaptics\|elan"
+lsmod | grep -i "fp\|finger\|bio\|fpc"
 
 echo -e "\n=== Device Files ==="
 echo "Checking for existing fingerprint device files:"
@@ -83,13 +83,13 @@ echo -e "\n=== Saving Results ==="
 {
     echo "# Hardware Information Summary"
     echo "# Generated: $(date)"
-    echo "# System: $(uname -a)"
+    echo "# System: Linux"
     echo ""
     echo "## USB Devices Found"
     if command_exists lsusb; then
         USB_COUNT=$(lsusb | wc -l)
         echo "- Total USB devices: $USB_COUNT"
-        POTENTIAL_FP=$(lsusb | grep -i "fingerprint\|biometric\|validity\|synaptics\|elan\|goodix" | wc -l)
+        POTENTIAL_FP=$(lsusb | grep -i "fingerprint\|biometric\|fpc" | wc -l)
         echo "- Potential fingerprint devices: $POTENTIAL_FP"
     else
         echo "- USB information not available"

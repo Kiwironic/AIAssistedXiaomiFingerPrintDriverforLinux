@@ -2,7 +2,13 @@
 
 ## Confirmed Compatible Models
 
-### TM2117-40430 ✅
+### Timi/Xiaomi Book Pro 14 2022 (TM2117-40430) ✅
+- **Laptop Model**: Timi Book Pro 14 2022 / Xiaomi Book Pro 14 2022
+- **Alternative Names**: 
+  - Xiaomi laptop 14" 2022 Chinese edition
+  - Xiaomi Book Pro 14 Intel
+  - Xiaomi Book Pro 14 Intel i5-1240P
+- **Processor**: Intel i5-1240P
 - **System SKU**: TM2117-40430
 - **BIOS Version**: TIMI XMAAD4B0P1717
 - **Fingerprint Scanner**: FPC Fingerprint Reader (Disum)
@@ -10,7 +16,7 @@
 - **Windows Status**: ✅ Working (Windows 11 Pro)
 - **Linux Status**: 🔄 In Development
 - **Tested By**: Project maintainer
-- **Date Confirmed**: July 19, 2025
+- **Date Confirmed**: 2025
 
 ## Potentially Compatible Models
 

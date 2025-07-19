@@ -8,13 +8,14 @@ This project aims to create a comprehensive Linux driver for Xiaomi laptop finge
 
 ## Hardware Support
 
-- **Target Device**: Xiaomi Laptop with FPC Fingerprint Reader (Disum)
+- **Target Device**: Timi/Xiaomi Book Pro 14 2022 with FPC Fingerprint Reader (Disum)
+- **Laptop Model**: Timi Book Pro 14 2022 / Xiaomi Book Pro 14 2022
+- **Processor**: Intel i5-1240P
 - **System SKU**: TM2117-40430
 - **BIOS Version**: TIMI XMAAD4B0P1717
 - **Scanner Manufacturer**: Fingerprint Cards AB
 - **Device ID**: VID:PID 10A5:9201
 - **Interface**: USB
-- **Laptop Model**: Compatible with Xiaomi laptops using this fingerprint scanner
 
 ## Project Status
 
@@ -35,7 +36,8 @@ This project aims to create a comprehensive Linux driver for Xiaomi laptop finge
 ## Tested Hardware
 
 ### ✅ Confirmed Compatible
-- **Xiaomi Laptop Model**: TM2117-40430
+- **Laptop Model**: Timi/Xiaomi Book Pro 14 2022 (Intel i5-1240P)
+- **System SKU**: TM2117-40430
 - **BIOS Version**: TIMI XMAAD4B0P1717
 - **Fingerprint Scanner**: FPC Fingerprint Reader (Disum) VID:PID 10A5:9201
 - **Status**: Working on Windows 11 Pro, Linux driver in development

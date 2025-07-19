@@ -3,7 +3,7 @@
 
 Write-Host "=== Windows Fingerprint Scanner Analysis ===" -ForegroundColor Green
 Write-Host "Date: $(Get-Date)"
-Write-Host "System: $($env:COMPUTERNAME) - $(Get-WmiObject Win32_OperatingSystem | Select-Object -ExpandProperty Caption)"
+Write-Host "System: $(Get-WmiObject Win32_OperatingSystem | Select-Object -ExpandProperty Caption)"
 Write-Host ""
 
 # Check if running as Administrator
@@ -14,10 +14,10 @@ if (-not $isAdmin) {
 
 Write-Host "=== Device Manager Information ===" -ForegroundColor Yellow
 try {
-    # Get biometric devices
+    # Get biometric devices - focus on FPC fingerprint scanners
     $biometricDevices = Get-WmiObject -Class Win32_PnPEntity | Where-Object { 
-        $_.Name -match "fingerprint|biometric|validity|synaptics|elan|goodix" -or
-        $_.DeviceID -match "VID_.*fingerprint|biometric"
+        $_.Name -match "fingerprint|biometric|FPC" -or
+        $_.DeviceID -match "VID_10A5.*PID_9201"
     }
     
     if ($biometricDevices) {
@@ -64,7 +64,7 @@ $fingerprintDrivers = @()
 foreach ($path in $driverPaths) {
     if (Test-Path $path) {
         $drivers = Get-ChildItem -Path $path -Recurse -Include "*.sys", "*.inf" -ErrorAction SilentlyContinue | 
-                   Where-Object { $_.Name -match "fp|finger|bio|validity|synaptics|elan|goodix" }
+                   Where-Object { $_.Name -match "fpc|finger|bio" }
         
         foreach ($driver in $drivers) {
             $fingerprintDrivers += $driver
@@ -99,7 +99,7 @@ foreach ($regPath in $registryPaths) {
     try {
         if (Test-Path $regPath) {
             $keys = Get-ChildItem -Path $regPath -Recurse -ErrorAction SilentlyContinue | 
-                    Where-Object { $_.Name -match "fingerprint|biometric|validity|synaptics|elan|goodix" }
+                    Where-Object { $_.Name -match "fingerprint|biometric|fpc" }
             
             foreach ($key in $keys) {
                 Write-Host "Registry Key: $($key.Name)"
@@ -136,7 +136,7 @@ try {
 
 Write-Host "=== Installed Software ===" -ForegroundColor Yellow
 $software = Get-WmiObject -Class Win32_Product | Where-Object { 
-    $_.Name -match "fingerprint|biometric|validity|synaptics|elan|goodix" 
+    $_.Name -match "fingerprint|biometric|fpc" 
 }
 
 if ($software) {
