@@ -3,6 +3,7 @@
 ## Project Overview
 
 **Target Device**: FPC Fingerprint Reader (Disum) - VID:PID 10A5:9201  
+**System**: Xiaomi Laptop (SKU: TM2117-40430, BIOS: TIMI XMAAD4B0P1717)  
 **Manufacturer**: Fingerprint Cards AB  
 **Current Status**: Working on Windows 11, no confirmed Linux support  
 

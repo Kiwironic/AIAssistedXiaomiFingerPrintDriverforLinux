@@ -9,6 +9,8 @@ This project aims to create a comprehensive Linux driver for Xiaomi laptop finge
 ## Hardware Support
 
 - **Target Device**: Xiaomi Laptop with FPC Fingerprint Reader (Disum)
+- **System SKU**: TM2117-40430
+- **BIOS Version**: TIMI XMAAD4B0P1717
 - **Scanner Manufacturer**: Fingerprint Cards AB
 - **Device ID**: VID:PID 10A5:9201
 - **Interface**: USB
@@ -29,6 +31,17 @@ This project aims to create a comprehensive Linux driver for Xiaomi laptop finge
 - [ ] Check existing libfprint support for this device
 - [ ] Analyze similar FPC implementations
 - [ ] Plan development approach
+
+## Tested Hardware
+
+### ✅ Confirmed Compatible
+- **Xiaomi Laptop Model**: TM2117-40430
+- **BIOS Version**: TIMI XMAAD4B0P1717
+- **Fingerprint Scanner**: FPC Fingerprint Reader (Disum) VID:PID 10A5:9201
+- **Status**: Working on Windows 11 Pro, Linux driver in development
+
+### 🔍 Potentially Compatible
+Other Xiaomi laptops with the same FPC fingerprint scanner (VID:PID 10A5:9201) may also be compatible. Please check your device ID and contribute compatibility information.
 
 ## Requirements
 
@@ -63,6 +76,7 @@ sudo pacman -S linux-headers base-devel
 
 - [Development Plan](docs/development-plan.md) - **Current project roadmap**
 - [Hardware Analysis](hardware-analysis/device-analysis.md) - **Complete device specifications**
+- [Xiaomi Compatibility](hardware-analysis/xiaomi-compatibility.md) - **Supported Xiaomi laptop models**
 - [libfprint Research](hardware-analysis/libfprint-research.md) - **Linux integration research**
 - [Reverse Engineering Process](docs/reverse-engineering.md)
 - [Driver Architecture](docs/architecture.md)
