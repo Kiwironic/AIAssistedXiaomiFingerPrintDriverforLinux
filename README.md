@@ -62,9 +62,9 @@ sudo pacman -S linux-headers base-devel
 
 - [Development Plan](docs/development-plan.md) - **Current project roadmap**
 - [Hardware Analysis](hardware-analysis/device-analysis.md) - **Complete device specifications**
+- [libfprint Research](hardware-analysis/libfprint-research.md) - **Linux integration research**
 - [Reverse Engineering Process](docs/reverse-engineering.md)
 - [Driver Architecture](docs/architecture.md)
-- [Information Needed](docs/information-needed.md)
 
 ## Contributing
 

@@ -31,25 +31,12 @@ Fingerprint Cards AB devices that are known to be supported:
 
 ## Development Approach
 
-### If Device is Supported
-1. Test current libfprint version
-2. Identify any issues or limitations
-3. Contribute improvements if needed
+*See [docs/development-plan.md](../docs/development-plan.md) for complete development strategy and phases.*
 
-### If Device is Not Supported
-1. Analyze similar FPC devices in libfprint
-2. Reverse engineer communication protocol
-3. Implement new driver following libfprint patterns
-4. Submit contribution to libfprint project
-
-### Protocol Analysis Strategy
-1. **USB packet capture** during Windows operation
-2. **Compare with existing FPC drivers** in libfprint
-3. **Identify command/response patterns**
-4. **Document protocol specifications**
-
-## Next Research Steps
+## Next Research Steps (Phase 2)
 1. Download and analyze libfprint source code
 2. Search for existing FPC 10A5:9201 support
 3. Identify similar devices and their implementations
 4. Plan reverse engineering approach based on findings
+
+*This research is part of Phase 2 in the development plan.*

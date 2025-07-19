@@ -78,24 +78,7 @@
 4. **Communication Protocol**: Analyze USB packets during operation
 
 ### Development Strategy
-1. **Check libfprint**: Verify if VID:PID 10A5:9201 is already supported
-2. **USB Protocol Analysis**: Capture USB traffic during Windows operation
-3. **Driver Architecture**: Implement as USB driver with libfprint integration
-4. **Testing**: Develop on this specific hardware
-
-## Next Steps for Driver Development
-
-### Immediate Actions
-1. Check libfprint database for existing FPC 10A5:9201 support
-2. Set up USB packet capture environment
-3. Analyze Windows driver INF file for configuration details
-4. Research FPC Disum sensor specifications
-
-### Development Phases
-1. **Phase 1**: USB device recognition and basic communication
-2. **Phase 2**: Sensor initialization and image capture
-3. **Phase 3**: Integration with Linux biometric frameworks
-4. **Phase 4**: Testing and optimization
+*See [docs/development-plan.md](../docs/development-plan.md) for complete development roadmap and strategy.*
 
 ## Files for Analysis
 
