@@ -1,4 +1,4 @@
-#!/bin/bash
+﻿#!/bin/bash
 
 # Xiaomi FPC Fingerprint Driver Installation Script
 # Copyright (C) 2025 AI-Assisted Development
