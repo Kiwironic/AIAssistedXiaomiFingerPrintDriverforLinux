@@ -84,8 +84,9 @@ I'll need you to:
 1. **Run the hardware detection script:**
    ```bash
    chmod +x tools/hardware-info.sh
-   ./tools/hardware-info.sh > hardware-info.txt
+   ./tools/hardware-info.sh
    ```
+   (Results will be saved automatically to hardware-analysis/ directory)
 
 2. **Get Windows device information:**
    - Open Device Manager

@@ -3,10 +3,24 @@
 # Hardware Information Collection Script
 # This script gathers information about fingerprint scanners on the system
 
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+OUTPUT_DIR="$PROJECT_ROOT/hardware-analysis"
+
 echo "=== Fingerprint Scanner Hardware Detection ==="
 echo "Date: $(date)"
 echo "System: $(uname -a)"
 echo
+
+# Create output directory for structured output
+mkdir -p "$OUTPUT_DIR"
+
+# Function to check if command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
 
 # Check for USB fingerprint devices
 echo "=== USB Device Information ==="
@@ -64,8 +78,29 @@ if [ -d "/mnt/c" ] || [ -d "/media" ]; then
     echo "  - C:\\Windows\\System32\\DriverStore\\"
 fi
 
+echo -e "\n=== Saving Results ==="
+# Save all output to structured files
+{
+    echo "# Hardware Information Summary"
+    echo "# Generated: $(date)"
+    echo "# System: $(uname -a)"
+    echo ""
+    echo "## USB Devices Found"
+    if command_exists lsusb; then
+        USB_COUNT=$(lsusb | wc -l)
+        echo "- Total USB devices: $USB_COUNT"
+        POTENTIAL_FP=$(lsusb | grep -i "fingerprint\|biometric\|validity\|synaptics\|elan\|goodix" | wc -l)
+        echo "- Potential fingerprint devices: $POTENTIAL_FP"
+    else
+        echo "- USB information not available"
+    fi
+} > "$OUTPUT_DIR/summary.txt"
+
+echo "Results saved to: $OUTPUT_DIR/"
+echo "Summary available at: $OUTPUT_DIR/summary.txt"
+
 echo -e "\n=== Next Steps ==="
-echo "1. Save this output to hardware-info.txt"
-echo "2. If Windows is available, run the Windows analysis script"
+echo "1. Review the summary in $OUTPUT_DIR/summary.txt"
+echo "2. If Windows is available, run: tools/windows-analysis.ps1"
 echo "3. Identify the specific VID:PID of your fingerprint scanner"
 echo "4. Research existing Linux support for your device"
