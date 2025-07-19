@@ -18,7 +18,7 @@ This project follows standard open-source community guidelines. Be respectful, c
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd fingerprint-driver-linux
+cd FingerPrintDriverforLinux
 
 # Install development dependencies (Fedora)
 sudo dnf install kernel-devel gcc make git
@@ -30,7 +30,7 @@ sudo apt install linux-headers-$(uname -r) build-essential git
 ## Project Structure
 
 ```
-fingerprint-driver-linux/
+FingerPrintDriverforLinux/
 ├── src/           # Kernel module source code
 ├── tools/         # Analysis and development tools
 ├── scripts/       # Build and installation scripts

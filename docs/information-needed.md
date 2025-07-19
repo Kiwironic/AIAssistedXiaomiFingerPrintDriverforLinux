@@ -83,7 +83,6 @@ I'll need you to:
 
 1. **Run the hardware detection script:**
    ```bash
-   cd fingerprint-driver-linux
    chmod +x tools/hardware-info.sh
    ./tools/hardware-info.sh > hardware-info.txt
    ```
